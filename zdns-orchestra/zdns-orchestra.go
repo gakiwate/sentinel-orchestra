@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"syscall"
 
+	sentinelmon "github.com/gakiwate/sentinel-orchestra/sentinel-monitor"
 	"github.com/nsqio/go-nsq"
 	log "github.com/sirupsen/logrus"
 )
@@ -19,6 +20,7 @@ type SentinelZDNSOrchestrator struct {
 	nsqZDNSOutTopic  string
 	nsqZGrabOutTopic string
 	zdnsDelay        int64
+	monitor          *sentinelmon.SentinelMonitor
 }
 
 type ZDNSMetadata struct {
@@ -36,6 +38,7 @@ type ZDNSResultData struct {
 type ZDNSResult struct {
 	Data     ZDNSResultData `json:"data"`
 	MetaData ZDNSMetadata   `json:"metadata"`
+	Status   string         `json:"status"`
 }
 
 type SentinelOrchestratorConfig struct {
@@ -47,7 +50,7 @@ type SentinelOrchestratorConfig struct {
 	zdnsDelay        int64
 }
 
-func NewSentinelZDNS4hrDelayOrchestrator(nsqHost string) *SentinelZDNSOrchestrator {
+func NewSentinelZDNS4hrDelayOrchestrator(nsqHost string, monitor *sentinelmon.SentinelMonitor) *SentinelZDNSOrchestrator {
 	cfg4hr := &SentinelOrchestratorConfig{
 		nsqHost:          nsqHost,
 		nsqInTopic:       "zdns_results",
@@ -56,10 +59,10 @@ func NewSentinelZDNS4hrDelayOrchestrator(nsqHost string) *SentinelZDNSOrchestrat
 		nsqZGrabOutTopic: "zgrab",
 		zdnsDelay:        14400, // 4hours -- 3600 sec * 4
 	}
-	return NewSentinelZDNSOrchestrator(*cfg4hr)
+	return NewSentinelZDNSOrchestrator(*cfg4hr, monitor)
 }
 
-func NewSentinelZDNS24hrDelayOrchestrator(nsqHost string) *SentinelZDNSOrchestrator {
+func NewSentinelZDNS24hrDelayOrchestrator(nsqHost string, monitor *sentinelmon.SentinelMonitor) *SentinelZDNSOrchestrator {
 	cfg24hr := &SentinelOrchestratorConfig{
 		nsqHost:          nsqHost,
 		nsqInTopic:       "zdns_4hr_results",
@@ -68,10 +71,10 @@ func NewSentinelZDNS24hrDelayOrchestrator(nsqHost string) *SentinelZDNSOrchestra
 		nsqZGrabOutTopic: "zgrab",
 		zdnsDelay:        86400, // 24hours -- 3600 sec * 24
 	}
-	return NewSentinelZDNSOrchestrator(*cfg24hr)
+	return NewSentinelZDNSOrchestrator(*cfg24hr, monitor)
 }
 
-func NewSentinelZDNSOrchestrator(cfg SentinelOrchestratorConfig) *SentinelZDNSOrchestrator {
+func NewSentinelZDNSOrchestrator(cfg SentinelOrchestratorConfig, monitor *sentinelmon.SentinelMonitor) *SentinelZDNSOrchestrator {
 	nsqHost := cfg.nsqHost
 	// Instantiate a consumer that will subscribe to the provided channel.
 	consumer, err := nsq.NewConsumer(cfg.nsqInTopic, cfg.nsqInChannel, nsq.NewConfig())
@@ -95,6 +98,7 @@ func NewSentinelZDNSOrchestrator(cfg SentinelOrchestratorConfig) *SentinelZDNSOr
 		nsqZDNSOutTopic:  cfg.nsqZDNSOutTopic,
 		nsqZGrabOutTopic: cfg.nsqZGrabOutTopic,
 		zdnsDelay:        cfg.zdnsDelay,
+		monitor:          monitor,
 	}
 }
 
@@ -116,6 +120,7 @@ func (szo *SentinelZDNSOrchestrator) feedZDNSDelayed(metadata ZDNSMetadata, name
 
 func (szo *SentinelZDNSOrchestrator) feedZGrab(IPv4Addresses []string, IPv6Addresses []string, name string) error {
 	for _, ipv4 := range IPv4Addresses {
+		szo.monitor.AddIP(ipv4)
 		zgrabInput := fmt.Sprintf("{\"sni\": \"%s\", \"ip\": \"%s\"}", name, ipv4)
 		err := szo.producer.Publish(szo.nsqZGrabOutTopic, []byte(zgrabInput))
 		if err != nil {
@@ -123,6 +128,7 @@ func (szo *SentinelZDNSOrchestrator) feedZGrab(IPv4Addresses []string, IPv6Addre
 		}
 	}
 	for _, ipv6 := range IPv6Addresses {
+		szo.monitor.AddIP(ipv6)
 		zgrabInput := fmt.Sprintf("{\"sni\": \"%s\", \"ip\": \"%s\"}", name, ipv6)
 		err := szo.producer.Publish(szo.nsqZGrabOutTopic, []byte(zgrabInput))
 		if err != nil {
@@ -143,6 +149,9 @@ func (szo *SentinelZDNSOrchestrator) FeedBroker() error {
 			log.Error(err)
 			return err
 		}
+		szo.monitor.CheckZDNSResult(&sentinelmon.ZDNSResult{
+			Status: Result.Status,
+		})
 		err = szo.feedZDNSDelayed(Result.MetaData, Result.Data.Name)
 		if err != nil {
 			log.Error(err)
