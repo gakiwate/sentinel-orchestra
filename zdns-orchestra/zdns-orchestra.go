@@ -19,6 +19,7 @@ type SentinelZDNSOrchestrator struct {
 	nsqZDNSOutTopic  string
 	nsqZGrabOutTopic string
 	zdnsDelay        int64
+	zdnsMonitor      *ZDNSMonitor
 }
 
 type ZDNSMetadata struct {
@@ -36,6 +37,7 @@ type ZDNSResultData struct {
 type ZDNSResult struct {
 	Data     ZDNSResultData `json:"data"`
 	MetaData ZDNSMetadata   `json:"metadata"`
+	Status   string         `json:"status"`
 }
 
 type SentinelOrchestratorConfig struct {
@@ -87,6 +89,8 @@ func NewSentinelZDNSOrchestrator(cfg SentinelOrchestratorConfig) *SentinelZDNSOr
 		// Report Error and Exit.
 		log.Fatal(err)
 	}
+	// Create a new ZDNS monitor
+	zdnsMonitor := NewZDNSMonitor("/tmp/zdnsStats")
 
 	return &SentinelZDNSOrchestrator{
 		nsqHost:          nsqHost,
@@ -95,6 +99,7 @@ func NewSentinelZDNSOrchestrator(cfg SentinelOrchestratorConfig) *SentinelZDNSOr
 		nsqZDNSOutTopic:  cfg.nsqZDNSOutTopic,
 		nsqZGrabOutTopic: cfg.nsqZGrabOutTopic,
 		zdnsDelay:        cfg.zdnsDelay,
+		zdnsMonitor:      zdnsMonitor,
 	}
 }
 
@@ -116,6 +121,7 @@ func (szo *SentinelZDNSOrchestrator) feedZDNSDelayed(metadata ZDNSMetadata, name
 
 func (szo *SentinelZDNSOrchestrator) feedZGrab(IPv4Addresses []string, IPv6Addresses []string, name string) error {
 	for _, ipv4 := range IPv4Addresses {
+		szo.zdnsMonitor.AddIP(ipv4)
 		zgrabInput := fmt.Sprintf("{\"sni\": \"%s\", \"ip\": \"%s\"}", name, ipv4)
 		err := szo.producer.Publish(szo.nsqZGrabOutTopic, []byte(zgrabInput))
 		if err != nil {
@@ -123,6 +129,7 @@ func (szo *SentinelZDNSOrchestrator) feedZGrab(IPv4Addresses []string, IPv6Addre
 		}
 	}
 	for _, ipv6 := range IPv6Addresses {
+		szo.zdnsMonitor.AddIP(ipv6)
 		zgrabInput := fmt.Sprintf("{\"sni\": \"%s\", \"ip\": \"%s\"}", name, ipv6)
 		err := szo.producer.Publish(szo.nsqZGrabOutTopic, []byte(zgrabInput))
 		if err != nil {
@@ -143,6 +150,7 @@ func (szo *SentinelZDNSOrchestrator) FeedBroker() error {
 			log.Error(err)
 			return err
 		}
+		szo.zdnsMonitor.CheckZDNSResult(&Result)
 		err = szo.feedZDNSDelayed(Result.MetaData, Result.Data.Name)
 		if err != nil {
 			log.Error(err)
@@ -175,5 +183,6 @@ func (szo *SentinelZDNSOrchestrator) FeedBroker() error {
 	// Gracefully stop the consumer.
 	szo.consumer.Stop()
 	szo.producer.Stop()
+	szo.zdnsMonitor.CloseMonitor()
 	return nil
 }
