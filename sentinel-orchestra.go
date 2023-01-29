@@ -5,6 +5,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	certstreamorc "github.com/gakiwate/sentinel-orchestra/certstream-orchestra"
 	zdnsorc "github.com/gakiwate/sentinel-orchestra/zdns-orchestra"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -12,6 +13,7 @@ import (
 
 func main() {
 	var nsqHost string
+	var nsqOutTopic string
 
 	rootCmd := &cobra.Command{
 		Use:   "sentinel-orchestra",
@@ -19,18 +21,25 @@ func main() {
 		Long:  "sentinel-orchestrator manages messages between the different sentinel programs",
 		Run: func(cmd *cobra.Command, args []string) {
 			nsqHost, _ = cmd.Flags().GetString("nsq-host")
+			nsqOutTopic, _ = cmd.Flags().GetString("nsq-topic")
 		},
 	}
 
 	rootCmd.Flags().StringVar(&nsqHost, "nsq-host", "localhost", "IP address of machine running nslookupd")
+	rootCmd.Flags().StringVar(&nsqOutTopic, "nsq-topic", "zdns", "The NSQ topic to publish on")
 
 	// Set Logger Level
 	log.SetLevel(log.ErrorLevel)
 
-	// TODO: FIX weird behavior on --help / -h flag.
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
+
+	if rootCmd.Flags().Changed("help") {
+		return
+	}
+	certstreamOrchestrator := certstreamorc.NewSentinelCertstreamOrchestrator(nsqHost, nsqOutTopic)
+	go certstreamOrchestrator.Run()
 
 	zdnsOrchestrator := zdnsorc.NewSentinelZDNS4hrDelayOrchestrator(nsqHost)
 	go zdnsOrchestrator.FeedBroker()
