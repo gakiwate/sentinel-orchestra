@@ -184,6 +184,5 @@ func (szo *SentinelZDNSOrchestrator) FeedBroker() error {
 	// Gracefully stop the consumer.
 	szo.consumer.Stop()
 	szo.producer.Stop()
-	szo.monitor.CloseMonitor()
 	return nil
 }

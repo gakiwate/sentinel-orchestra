@@ -30,7 +30,7 @@ func main() {
 
 	rootCmd.Flags().StringVar(&nsqHost, "nsq-host", "localhost", "IP address of machine running nslookupd")
 	rootCmd.Flags().StringVar(&nsqOutTopic, "nsq-topic", "zdns", "The NSQ topic to publish on")
-	rootCmd.Flags().StringVar(&dbDir, "db-dir", "/tmp/sentinelStats", "The directory to store database files")
+	rootCmd.Flags().StringVar(&dbDir, "db-dir", "/opt/sentinel/sentinelStats", "The directory to store database files")
 
 	// Set Logger Level
 	log.SetLevel(log.ErrorLevel)
@@ -55,4 +55,5 @@ func main() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	<-sigChan
+	sentinelMonitor.CloseMonitor()
 }
