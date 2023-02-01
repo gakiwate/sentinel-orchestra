@@ -1,4 +1,4 @@
-package zdnsorc
+package sentinelmon
 
 import (
 	"encoding/binary"
@@ -8,43 +8,43 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type ZDNSMonitor struct {
+type SentinelMonitor struct {
 	db     *pebble.DB
 	dbLock sync.Mutex
 }
 
-// NewZDNSMonitor creates a new ZNDSMonitor.
-func NewZDNSMonitor(dirname string) *ZDNSMonitor {
+// NewSentinelMonitor creates a new SentinelMonitor.
+func NewSentinelMonitor(dirname string) *SentinelMonitor {
 	db, err := pebble.Open(dirname, &pebble.Options{})
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
 	}
-	return &ZDNSMonitor{
+	return &SentinelMonitor{
 		db: db,
 	}
 }
 
 // AddIP records that an IP address has been passed to ZGrab.
-func (monitor *ZDNSMonitor) AddIP(addr string) {
+func (monitor *SentinelMonitor) AddIP(addr string) {
 	monitor.incrementValue(addr)
 }
 
 // CheckZDNSResult reviews a ZDNSResult and records errors accordingly.
-func (monitor *ZDNSMonitor) CheckZDNSResult(result *ZDNSResult) {
+func (monitor *SentinelMonitor) CheckZDNSResult(result *ZDNSResult) {
 	if result.Status != "NOERROR" {
 		monitor.incrementValue("errors")
 	}
 	monitor.incrementValue("results")
 }
 
-// CloseMonitor cleans up ZDNSMonitor, closing the Pebble database.
-func (monitor *ZDNSMonitor) CloseMonitor() {
+// CloseMonitor cleans up SentinelMonitor, closing the Pebble database.
+func (monitor *SentinelMonitor) CloseMonitor() {
 	if err := monitor.db.Close(); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func (monitor *ZDNSMonitor) incrementValue(key string) {
+func (monitor *SentinelMonitor) incrementValue(key string) {
 	monitor.dbLock.Lock()
 	defer monitor.dbLock.Unlock()
 	newValue := uint64(1)
@@ -54,15 +54,15 @@ func (monitor *ZDNSMonitor) incrementValue(key string) {
 		newValue += byteArrayToUint64(count)
 		// Close to avoid memory leak
 		if err := closer.Close(); err != nil {
-			log.Fatal(err)
+			log.Error(err)
 		}
 	} else if err != pebble.ErrNotFound {
-		log.Fatal(err)
+		log.Error(err)
 	}
 
 	err = monitor.db.Set([]byte(key), uint64ToByteArray(newValue), pebble.Sync)
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
 	}
 }
 

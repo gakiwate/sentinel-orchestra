@@ -6,6 +6,7 @@ import (
 	"syscall"
 
 	certstreamorc "github.com/gakiwate/sentinel-orchestra/certstream-orchestra"
+	sentinelmon "github.com/gakiwate/sentinel-orchestra/sentinel-monitor"
 	zdnsorc "github.com/gakiwate/sentinel-orchestra/zdns-orchestra"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -14,6 +15,7 @@ import (
 func main() {
 	var nsqHost string
 	var nsqOutTopic string
+	var dbDir string
 
 	rootCmd := &cobra.Command{
 		Use:   "sentinel-orchestra",
@@ -22,11 +24,13 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			nsqHost, _ = cmd.Flags().GetString("nsq-host")
 			nsqOutTopic, _ = cmd.Flags().GetString("nsq-topic")
+			dbDir, _ = cmd.Flags().GetString("db-dir")
 		},
 	}
 
 	rootCmd.Flags().StringVar(&nsqHost, "nsq-host", "localhost", "IP address of machine running nslookupd")
 	rootCmd.Flags().StringVar(&nsqOutTopic, "nsq-topic", "zdns", "The NSQ topic to publish on")
+	rootCmd.Flags().StringVar(&dbDir, "db-dir", "/tmp/sentinelStats", "The directory to store database files")
 
 	// Set Logger Level
 	log.SetLevel(log.ErrorLevel)
@@ -38,10 +42,13 @@ func main() {
 	if rootCmd.Flags().Changed("help") {
 		return
 	}
+
+	sentinelMonitor := sentinelmon.NewSentinelMonitor(dbDir)
+
 	certstreamOrchestrator := certstreamorc.NewSentinelCertstreamOrchestrator(nsqHost, nsqOutTopic)
 	go certstreamOrchestrator.Run()
 
-	zdnsOrchestrator := zdnsorc.NewSentinelZDNS4hrDelayOrchestrator(nsqHost)
+	zdnsOrchestrator := zdnsorc.NewSentinelZDNS4hrDelayOrchestrator(nsqHost, sentinelMonitor)
 	go zdnsOrchestrator.FeedBroker()
 
 	// wait for signal to exit
