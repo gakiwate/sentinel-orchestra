@@ -3,6 +3,7 @@ module github.com/gakiwate/sentinel-orchestra
 go 1.18
 
 require (
+	github.com/CaliDog/certstream-go v0.0.0-20200713031452-eca7997412f1
 	github.com/cockroachdb/pebble v0.0.0-20230126224944-0a21ab1b22f5
 	github.com/nsqio/go-nsq v1.1.0
 	github.com/sirupsen/logrus v1.9.0
@@ -10,12 +11,6 @@ require (
 )
 
 require (
-	github.com/CaliDog/certstream-go v0.0.0-20200713031452-eca7997412f1 // indirect
-	github.com/golang/snappy v0.0.1 // indirect
-	github.com/gorilla/websocket v1.5.0 // indirect
-	github.com/inconshreveable/mousetrap v1.0.1 // indirect
-	github.com/jmoiron/jsonq v0.0.0-20150511023944-e874b168d07e // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/DataDog/zstd v1.4.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
@@ -26,7 +21,9 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
+	github.com/jmoiron/jsonq v0.0.0-20150511023944-e874b168d07e // indirect
 	github.com/klauspost/compress v1.11.13 // indirect
 	github.com/kr/pretty v0.2.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
