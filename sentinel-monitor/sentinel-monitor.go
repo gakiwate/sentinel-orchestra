@@ -9,8 +9,8 @@ import (
 )
 
 type SentinelMonitor struct {
-	db     *pebble.DB
 	dbLock sync.Mutex
+	db     *pebble.DB
 }
 
 // NewSentinelMonitor creates a new SentinelMonitor.

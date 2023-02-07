@@ -4,5 +4,5 @@ package sentinelmon
 type ZDNSResult struct {
 	Data     interface{}
 	MetaData interface{}
-	Status   string `json:"status"`
+	Status   string
 }
