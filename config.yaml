@@ -1,0 +1,14 @@
+certstream:
+  enable: true
+  topics:
+    - "certstream"
+zdns:
+  enable: true
+  topics:
+    - "zdns_4hr"
+    - "zdns_24hr"
+zgrab:
+  enable: true
+  topics:
+    - "zgrab_4hr"
+    - "zgrab_24hr"

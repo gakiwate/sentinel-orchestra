@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/nsqio/go-nsq"
 	log "github.com/sirupsen/logrus"
@@ -41,7 +42,6 @@ type ZDNSResult struct {
 type SentinelOrchestratorConfig struct {
 	nsqHost          string
 	nsqInTopic       string
-	nsqInChannel     string
 	nsqZDNSOutTopic  string
 	nsqZGrabOutTopic string
 	zdnsDelay        int64
@@ -51,7 +51,6 @@ func NewSentinelZDNS4hrDelayOrchestrator(nsqHost string) *SentinelZDNSOrchestrat
 	cfg4hr := &SentinelOrchestratorConfig{
 		nsqHost:          nsqHost,
 		nsqInTopic:       "zdns_results",
-		nsqInChannel:     "orchestrator",
 		nsqZDNSOutTopic:  "zdns_4hr",
 		nsqZGrabOutTopic: "zgrab",
 		zdnsDelay:        14400, // 4hours -- 3600 sec * 4
@@ -63,7 +62,6 @@ func NewSentinelZDNS24hrDelayOrchestrator(nsqHost string) *SentinelZDNSOrchestra
 	cfg24hr := &SentinelOrchestratorConfig{
 		nsqHost:          nsqHost,
 		nsqInTopic:       "zdns_4hr_results",
-		nsqInChannel:     "orchestrator",
 		nsqZDNSOutTopic:  "zdns_24hr",
 		nsqZGrabOutTopic: "zgrab",
 		zdnsDelay:        86400, // 24hours -- 3600 sec * 24
@@ -74,7 +72,7 @@ func NewSentinelZDNS24hrDelayOrchestrator(nsqHost string) *SentinelZDNSOrchestra
 func NewSentinelZDNSOrchestrator(cfg SentinelOrchestratorConfig) *SentinelZDNSOrchestrator {
 	nsqHost := cfg.nsqHost
 	// Instantiate a consumer that will subscribe to the provided channel.
-	consumer, err := nsq.NewConsumer(cfg.nsqInTopic, cfg.nsqInChannel, nsq.NewConfig())
+	consumer, err := nsq.NewConsumer(cfg.nsqInTopic, "orchestrator", nsq.NewConfig())
 	consumer.SetLoggerLevel(nsq.LogLevelError)
 	if err != nil {
 		log.Fatal(err)
@@ -103,10 +101,10 @@ func (szo *SentinelZDNSOrchestrator) feedZDNSDelayed(metadata ZDNSMetadata, name
 	newScanAfter, _ := strconv.ParseInt(scanAfter, 0, 64)
 	newScanAfter = newScanAfter + szo.zdnsDelay
 
-	fmt.Printf("New Scan After: %d; Delay: %d", newScanAfter, szo.zdnsDelay)
+	// fmt.Printf("New Scan After: %d; Delay: %d", newScanAfter, szo.zdnsDelay)
 	zdnsFeedInput := fmt.Sprintf("{\"domain\": \"%s\",\"metadata\": {\"cert_sha1\": \"%s\", \"scan_after\": \"%d\"}}", name, metadata.CertSHA1, newScanAfter)
 	err := szo.producer.Publish(szo.nsqZDNSOutTopic, []byte(zdnsFeedInput))
-	log.Info(fmt.Sprintf("Publishing %s to channel %s", zdnsFeedInput, szo.nsqZDNSOutTopic))
+	log.Info(fmt.Sprintf("ZDNS to 4/24hr: Publishing %s to channel %s", zdnsFeedInput, szo.nsqZDNSOutTopic))
 	if err != nil {
 		log.Error(err)
 		return err
@@ -115,15 +113,20 @@ func (szo *SentinelZDNSOrchestrator) feedZDNSDelayed(metadata ZDNSMetadata, name
 }
 
 func (szo *SentinelZDNSOrchestrator) feedZGrab(IPv4Addresses []string, IPv6Addresses []string, name string) error {
+
 	for _, ipv4 := range IPv4Addresses {
-		zgrabInput := fmt.Sprintf("{\"sni\": \"%s\", \"ip\": \"%s\"}", name, ipv4)
+		tnow := time.Now().Unix()
+		zgrabInput := fmt.Sprintf("{\"sni\": \"%s\", \"ip\": \"%s\",  \"scan_after\": \"%d\"}", name, ipv4, tnow)
+		log.Info(fmt.Sprintf("ZDNS to Zgrab IPV4: Publishing %s to channel %s", zgrabInput, szo.nsqZDNSOutTopic))
 		err := szo.producer.Publish(szo.nsqZGrabOutTopic, []byte(zgrabInput))
 		if err != nil {
 			log.Error(err)
 		}
 	}
 	for _, ipv6 := range IPv6Addresses {
-		zgrabInput := fmt.Sprintf("{\"sni\": \"%s\", \"ip\": \"%s\"}", name, ipv6)
+		tnow := time.Now().Unix()
+		zgrabInput := fmt.Sprintf("{\"sni\": \"%s\", \"ip\": \"%s\",  \"scan_after\": \"%d\"}", name, ipv6, tnow)
+		log.Info(fmt.Sprintf("ZDNS to Zgrab IPV6: Publishing %s to channel %s", zgrabInput, szo.nsqZDNSOutTopic))
 		err := szo.producer.Publish(szo.nsqZGrabOutTopic, []byte(zgrabInput))
 		if err != nil {
 			log.Error(err)
