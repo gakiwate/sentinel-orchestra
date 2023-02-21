@@ -1,15 +1,33 @@
 package main
 
 import (
+	"io/ioutil"
 	"os"
 	"os/signal"
 	"syscall"
 
 	certstreamorc "github.com/gakiwate/sentinel-orchestra/certstream-orchestra"
 	zdnsorc "github.com/gakiwate/sentinel-orchestra/zdns-orchestra"
+	zgraborc "github.com/gakiwate/sentinel-orchestra/zgrab-orchestra"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
 )
+
+type Config struct {
+	Certstream struct {
+		Enable bool     `yaml:"enable"`
+		Topics []string `yaml:"topics"`
+	} `yaml:"certstream"`
+	ZDNS struct {
+		Enable bool     `yaml:"enable"`
+		Topics []string `yaml:"topics"`
+	} `yaml:"zdns"`
+	ZGrab struct {
+		Enable bool     `yaml:"enable"`
+		Topics []string `yaml:"topics"`
+	} `yaml:"zgrab"`
+}
 
 func main() {
 	var nsqHost string
@@ -38,11 +56,49 @@ func main() {
 	if rootCmd.Flags().Changed("help") {
 		return
 	}
-	certstreamOrchestrator := certstreamorc.NewSentinelCertstreamOrchestrator(nsqHost, nsqOutTopic)
-	go certstreamOrchestrator.Run()
 
-	zdnsOrchestrator := zdnsorc.NewSentinelZDNS4hrDelayOrchestrator(nsqHost)
-	go zdnsOrchestrator.FeedBroker()
+	// Use configuration file to determine which programs to run
+	configData, err := ioutil.ReadFile("config.yaml")
+	if err != nil {
+		log.Fatalf("Failed to read config file: %v", err)
+	}
+
+	var config Config
+	err = yaml.Unmarshal(configData, &config)
+	if err != nil {
+		log.Fatalf("Failed to parse config file: %v", err)
+	}
+
+	if config.Certstream.Enable {
+		certstreamOrchestrator := certstreamorc.NewSentinelCertstreamOrchestrator(nsqHost, config.Certstream.Topics[0])
+		go certstreamOrchestrator.Run()
+	}
+
+	if config.ZDNS.Enable {
+		for _, topic := range config.ZDNS.Topics {
+			if topic == "zdns_4hr" {
+				zdnsOrchestrator_4hr := zdnsorc.NewSentinelZDNS4hrDelayOrchestrator(nsqHost)
+				go zdnsOrchestrator_4hr.FeedBroker()
+			}
+			if topic == "zdns_24hr" {
+				zdnsOrchestrator_24hr := zdnsorc.NewSentinelZDNS24hrDelayOrchestrator(nsqHost)
+				go zdnsOrchestrator_24hr.FeedBroker()
+			}
+		}
+	}
+
+	if config.ZGrab.Enable {
+		for _, topic := range config.ZGrab.Topics {
+			if topic == "zgrab_4hr" {
+				zgrabOrchestrator_4hr := zgraborc.NewSentinelZgrab4hrDelayOrchestrator(nsqHost)
+				go zgrabOrchestrator_4hr.FeedBroker()
+			}
+			if topic == "zgrab_24hr" {
+				zgrabOrchestrator_24hr := zgraborc.NewSentinelZgrab24hrDelayOrchestrator(nsqHost)
+				go zgrabOrchestrator_24hr.FeedBroker()
+			}
+		}
+	}
 
 	// wait for signal to exit
 	sigChan := make(chan os.Signal, 1)

@@ -96,7 +96,7 @@ func (o *SentinelCertstreamOrchestrator) Run() {
 				tnow := time.Now().Unix()
 				zdnsFeedInput := fmt.Sprintf("{\"domain\": \"%s\",\"metadata\": {\"cert_sha1\": \"%s\", \"scan_after\": \"%d\"}}", domain, certSHA1, tnow)
 				err = producer.Publish(nsqOutTopic, []byte(zdnsFeedInput))
-				log.Info(fmt.Sprintf("Publishing %s to channel %s", zdnsFeedInput, nsqOutTopic))
+				log.Info(fmt.Sprintf("Certstream: Publishing %s to channel %s", zdnsFeedInput, nsqOutTopic))
 				if err != nil {
 					log.Error(err)
 				}
