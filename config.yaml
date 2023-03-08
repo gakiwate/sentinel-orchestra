@@ -4,6 +4,7 @@ certstream:
     - "certstream"
 zdns:
   enable: true
+  ipv6: false
   topics:
     - "zdns_4hr"
     - "zdns_24hr"
