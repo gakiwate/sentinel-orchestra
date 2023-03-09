@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	mon "github.com/gakiwate/sentinel-orchestra/sentinel-monitor"
 	"github.com/nsqio/go-nsq"
 	log "github.com/sirupsen/logrus"
 )
@@ -40,6 +41,7 @@ type ZDNSResult struct {
 }
 
 type SentinelOrchestratorConfig struct {
+	monitor          *mon.SentinelMonitor
 	nsqHost          string
 	nsqInTopic       string
 	nsqZDNSOutTopic  string
@@ -47,8 +49,9 @@ type SentinelOrchestratorConfig struct {
 	zdnsDelay        int64
 }
 
-func NewSentinelZDNS4hrDelayOrchestrator(nsqHost string) *SentinelZDNSOrchestrator {
+func NewSentinelZDNS4hrDelayOrchestrator(monitor *mon.SentinelMonitor, nsqHost string) *SentinelZDNSOrchestrator {
 	cfg4hr := &SentinelOrchestratorConfig{
+		monitor:          monitor,
 		nsqHost:          nsqHost,
 		nsqInTopic:       "zdns_results",
 		nsqZDNSOutTopic:  "zdns_4hr",
@@ -58,8 +61,9 @@ func NewSentinelZDNS4hrDelayOrchestrator(nsqHost string) *SentinelZDNSOrchestrat
 	return NewSentinelZDNSOrchestrator(*cfg4hr)
 }
 
-func NewSentinelZDNS24hrDelayOrchestrator(nsqHost string) *SentinelZDNSOrchestrator {
+func NewSentinelZDNS24hrDelayOrchestrator(monitor *mon.SentinelMonitor, nsqHost string) *SentinelZDNSOrchestrator {
 	cfg24hr := &SentinelOrchestratorConfig{
+		monitor:          monitor,
 		nsqHost:          nsqHost,
 		nsqInTopic:       "zdns_4hr_results",
 		nsqZDNSOutTopic:  "zdns_24hr",

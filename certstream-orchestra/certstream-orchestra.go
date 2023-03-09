@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/CaliDog/certstream-go"
+	mon "github.com/gakiwate/sentinel-orchestra/sentinel-monitor"
 	"github.com/nsqio/go-nsq"
 
 	log "github.com/sirupsen/logrus"
@@ -13,13 +14,15 @@ import (
 
 // SentinelCertstreamOrchestrator is the orchestrator for the certstream program
 type SentinelCertstreamOrchestrator struct {
+	monitor     *mon.SentinelMonitor
 	nsqHost     string
 	nsqOutTopic string
 }
 
 // NewSentinelCertstreamOrchestrator creates a new SentinelCertstreamOrchestrator
-func NewSentinelCertstreamOrchestrator(nsqHost string, nsqOutTopic string) *SentinelCertstreamOrchestrator {
+func NewSentinelCertstreamOrchestrator(monitor *mon.SentinelMonitor, nsqHost string, nsqOutTopic string) *SentinelCertstreamOrchestrator {
 	return &SentinelCertstreamOrchestrator{
+		monitor:     monitor,
 		nsqHost:     nsqHost,
 		nsqOutTopic: nsqOutTopic,
 	}
@@ -72,6 +75,7 @@ func (o *SentinelCertstreamOrchestrator) Run() {
 
 	stream, errStream := certstream.CertStreamEventStream(false)
 	for {
+		o.monitor.Stats.Incr("certstream.cert_cnt")
 		select {
 		case jq := <-stream:
 			domains, err := jq.ArrayOfStrings("data", "leaf_cert", "all_domains")
@@ -93,6 +97,7 @@ func (o *SentinelCertstreamOrchestrator) Run() {
 			certSHA1 = formatSHA1(certSHA1)
 
 			for _, domain := range domains {
+				o.monitor.Stats.Incr("certstream.domain_cnt")
 				tnow := time.Now().Unix()
 				zdnsFeedInput := fmt.Sprintf("{\"domain\": \"%s\",\"metadata\": {\"cert_sha1\": \"%s\", \"scan_after\": \"%d\"}}", domain, certSHA1, tnow)
 				err = producer.Publish(nsqOutTopic, []byte(zdnsFeedInput))
@@ -103,6 +108,7 @@ func (o *SentinelCertstreamOrchestrator) Run() {
 			}
 
 		case err := <-errStream:
+			o.monitor.Stats.Incr("certstream.cert_err_cnt")
 			log.Error(err)
 		}
 	}

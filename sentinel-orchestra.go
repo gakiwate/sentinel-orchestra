@@ -7,6 +7,7 @@ import (
 	"syscall"
 
 	certstreamorc "github.com/gakiwate/sentinel-orchestra/certstream-orchestra"
+	sentinelmon "github.com/gakiwate/sentinel-orchestra/sentinel-monitor"
 	zdnsorc "github.com/gakiwate/sentinel-orchestra/zdns-orchestra"
 	zgraborc "github.com/gakiwate/sentinel-orchestra/zgrab-orchestra"
 	log "github.com/sirupsen/logrus"
@@ -69,19 +70,21 @@ func main() {
 		log.Fatalf("Failed to parse config file: %v", err)
 	}
 
+	monitor := sentinelmon.NewSentinelMonitor()
+
 	if config.Certstream.Enable {
-		certstreamOrchestrator := certstreamorc.NewSentinelCertstreamOrchestrator(nsqHost, config.Certstream.Topics[0])
+		certstreamOrchestrator := certstreamorc.NewSentinelCertstreamOrchestrator(monitor, nsqHost, config.Certstream.Topics[0])
 		go certstreamOrchestrator.Run()
 	}
 
 	if config.ZDNS.Enable {
 		for _, topic := range config.ZDNS.Topics {
 			if topic == "zdns_4hr" {
-				zdnsOrchestrator_4hr := zdnsorc.NewSentinelZDNS4hrDelayOrchestrator(nsqHost)
+				zdnsOrchestrator_4hr := zdnsorc.NewSentinelZDNS4hrDelayOrchestrator(monitor, nsqHost)
 				go zdnsOrchestrator_4hr.FeedBroker()
 			}
 			if topic == "zdns_24hr" {
-				zdnsOrchestrator_24hr := zdnsorc.NewSentinelZDNS24hrDelayOrchestrator(nsqHost)
+				zdnsOrchestrator_24hr := zdnsorc.NewSentinelZDNS24hrDelayOrchestrator(monitor, nsqHost)
 				go zdnsOrchestrator_24hr.FeedBroker()
 			}
 		}
@@ -90,11 +93,11 @@ func main() {
 	if config.ZGrab.Enable {
 		for _, topic := range config.ZGrab.Topics {
 			if topic == "zgrab_4hr" {
-				zgrabOrchestrator_4hr := zgraborc.NewSentinelZgrab4hrDelayOrchestrator(nsqHost)
+				zgrabOrchestrator_4hr := zgraborc.NewSentinelZgrab4hrDelayOrchestrator(monitor, nsqHost)
 				go zgrabOrchestrator_4hr.FeedBroker()
 			}
 			if topic == "zgrab_24hr" {
-				zgrabOrchestrator_24hr := zgraborc.NewSentinelZgrab24hrDelayOrchestrator(nsqHost)
+				zgrabOrchestrator_24hr := zgraborc.NewSentinelZgrab24hrDelayOrchestrator(monitor, nsqHost)
 				go zgrabOrchestrator_24hr.FeedBroker()
 			}
 		}
