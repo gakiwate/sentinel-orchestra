@@ -6,13 +6,14 @@ import (
 	"strconv"
 
 	"github.com/cockroachdb/pebble"
+	"github.com/cockroachdb/pebble/vfs"
 )
 
 type SentinelStore struct {
 	DB *pebble.DB
 }
 
-func NewSentinelCounterStore(storeName string) *SentinelStore {
+func NewSentinelCounterStore(storeName string, tmpDB bool) *SentinelStore {
 	var opts pebble.Options
 	opts.Merger = &pebble.Merger{
 		Merge: func(key, value []byte) (pebble.ValueMerger, error) {
@@ -23,6 +24,10 @@ func NewSentinelCounterStore(storeName string) *SentinelStore {
 		},
 		Name: "SentinelCounterStore",
 	}
+	if tmpDB {
+		opts.FS = vfs.NewMem()
+	}
+
 	db, err := pebble.Open(fmt.Sprintf("%s.db", storeName), &opts)
 	if err != nil {
 		log.Fatal("error opening database:", err)
@@ -30,4 +35,8 @@ func NewSentinelCounterStore(storeName string) *SentinelStore {
 	return &SentinelStore{
 		DB: db,
 	}
+}
+
+func (store *SentinelStore) Close() {
+	store.DB.Close()
 }

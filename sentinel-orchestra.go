@@ -103,6 +103,8 @@ func main() {
 		}
 	}
 
+	go monitor.MonitorLoop()
+
 	// wait for signal to exit
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
