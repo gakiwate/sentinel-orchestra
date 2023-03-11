@@ -18,7 +18,10 @@ func NewSentinelCounterStore(storeName string, tmpDB bool) *SentinelStore {
 	opts.Merger = &pebble.Merger{
 		Merge: func(key, value []byte) (pebble.ValueMerger, error) {
 			res := &CounterValueMerger{}
-			val, _ := strconv.Atoi(string(value))
+			val, err := strconv.Atoi(string(value))
+			if err != nil {
+				return res, err
+			}
 			res.Count += val
 			return res, nil
 		},

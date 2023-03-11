@@ -2,9 +2,6 @@ package main
 
 import (
 	"io/ioutil"
-	"os"
-	"os/signal"
-	"syscall"
 
 	certstreamorc "github.com/gakiwate/sentinel-orchestra/certstream-orchestra"
 	sentinelmon "github.com/gakiwate/sentinel-orchestra/sentinel-monitor"
@@ -103,10 +100,5 @@ func main() {
 		}
 	}
 
-	monitor.Serve()
-
-	// wait for signal to exit
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	<-sigChan
+	log.Fatal(monitor.Serve())
 }

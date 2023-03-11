@@ -40,7 +40,7 @@ func (ctrdb *SentinelCounters) Get(key string) (int, error) {
 
 func (ctrdb *SentinelCounters) FetchData(keyPrefix []byte) map[string]int {
 	data := make(map[string]int)
-	iter := ctrdb.FetchAllPrefix(keyPrefix)
+	iter := ctrdb.FetchAllKeysIterator(keyPrefix)
 	for iter.First(); iter.Valid(); iter.Next() {
 		k := string(iter.Key())
 		val, _ := strconv.Atoi(string(iter.Value()))
@@ -49,7 +49,7 @@ func (ctrdb *SentinelCounters) FetchData(keyPrefix []byte) map[string]int {
 	return data
 }
 
-func (ctrdb *SentinelCounters) FetchAllPrefix(keyPrefix []byte) *pebble.Iterator {
+func (ctrdb *SentinelCounters) FetchAllKeysIterator(keyPrefix []byte) *pebble.Iterator {
 	keyUpperBound := func(b []byte) []byte {
 		end := make([]byte, len(b))
 		copy(end, b)

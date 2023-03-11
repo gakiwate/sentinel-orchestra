@@ -12,7 +12,7 @@ func TestGetOnly(t *testing.T) {
 	counters := InitTest(t)
 	val, _ := counters.Get("cat1.test")
 	if val != 0 {
-		t.Errorf("Expected 1 but counter value is %d", val)
+		t.Errorf("Expected 0 but counter value is %d", val)
 	}
 }
 
@@ -30,7 +30,7 @@ func TestPrefixFuncs(t *testing.T) {
 	counters.Incr("cat1.test")
 	counters.Incr("cat2.test")
 	counters.Incr("cat1.test")
-	iter := counters.FetchAllPrefix([]byte("cat1"))
+	iter := counters.FetchAllKeysIterator([]byte("cat1"))
 	for iter.First(); iter.Valid(); iter.Next() {
 		if string(iter.Key()) != "cat1.test" || string(iter.Value()) != "2" {
 			t.Errorf("Expected key cat1.test got %s. Expected value 2 got %s\n", string(iter.Key()), string(iter.Value()))
