@@ -103,7 +103,7 @@ func main() {
 		}
 	}
 
-	go monitor.MonitorLoop()
+	monitor.Serve()
 
 	// wait for signal to exit
 	sigChan := make(chan os.Signal, 1)
