@@ -32,8 +32,8 @@ func (mon *SentinelMonitor) Serve() error {
 	return http.ListenAndServe(":8000", nil)
 }
 
-func NewSentinelMonitor() *SentinelMonitor {
+func NewSentinelMonitor(monitorName string) *SentinelMonitor {
 	return &SentinelMonitor{
-		Stats: *utils.NewSentinelCounter("sentinel-stats", false),
+		Stats: *utils.NewSentinelCounter(monitorName, false),
 	}
 }

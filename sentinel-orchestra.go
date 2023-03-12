@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 
 	certstreamorc "github.com/gakiwate/sentinel-orchestra/certstream-orchestra"
@@ -14,17 +15,21 @@ import (
 
 type Config struct {
 	Certstream struct {
-		Enable bool     `yaml:"enable"`
+		Enable bool     `default:"false" yaml:"enable"`
 		Topics []string `yaml:"topics"`
 	} `yaml:"certstream"`
 	ZDNS struct {
-		Enable bool     `yaml:"enable"`
+		Enable bool     `default:"false" yaml:"enable"`
 		Topics []string `yaml:"topics"`
 	} `yaml:"zdns"`
 	ZGrab struct {
-		Enable bool     `yaml:"enable"`
+		Enable bool     `default:"false" yaml:"enable"`
 		Topics []string `yaml:"topics"`
 	} `yaml:"zgrab"`
+	Monitor struct {
+		Storage string `default:"." yaml:"storage"`
+		Name    string `default:"sentinel-stats" yaml:"name"`
+	} `yaml:"monitor"`
 }
 
 func main() {
@@ -67,7 +72,8 @@ func main() {
 		log.Fatalf("Failed to parse config file: %v", err)
 	}
 
-	monitor := sentinelmon.NewSentinelMonitor()
+	monitorName := fmt.Sprintf("%s/%s", config.Monitor.Storage, config.Monitor.Name)
+	monitor := sentinelmon.NewSentinelMonitor(monitorName)
 
 	if config.Certstream.Enable {
 		certstreamOrchestrator := certstreamorc.NewSentinelCertstreamOrchestrator(monitor, nsqHost, config.Certstream.Topics[0])
