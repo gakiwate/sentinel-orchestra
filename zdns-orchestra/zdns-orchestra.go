@@ -15,6 +15,7 @@ import (
 )
 
 type SentinelZDNSOrchestrator struct {
+	monitor          *mon.SentinelMonitor
 	nsqHost          string
 	consumer         nsq.Consumer
 	producer         nsq.Producer
@@ -38,6 +39,7 @@ type ZDNSResultData struct {
 type ZDNSResult struct {
 	Data     ZDNSResultData `json:"data"`
 	MetaData ZDNSMetadata   `json:"metadata"`
+	Status   string         `json:"status"`
 }
 
 type SentinelOrchestratorConfig struct {
@@ -149,6 +151,10 @@ func (szo *SentinelZDNSOrchestrator) FeedBroker() error {
 		if err != nil {
 			log.Error(err)
 			return err
+		}
+		szo.monitor.Stats.Incr("stats.zdns.result_cnt")
+		if Result.Status != "NOERROR" {
+			szo.monitor.Stats.Incr("stats.zdns.error_cnt")
 		}
 		err = szo.feedZDNSDelayed(Result.MetaData, Result.Data.Name)
 		if err != nil {

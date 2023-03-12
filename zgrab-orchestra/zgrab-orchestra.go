@@ -111,7 +111,7 @@ func (szo *SentinelZGrabOrchestrator) FeedBroker() error {
 			log.Error(err)
 			return err
 		}
-
+		szo.monitor.Stats.Incr("stats.zgrab.result_cnt")
 		err = szo.feedZGrabDelayed(Result.IP, Result.Domain, Result.ScanAfter)
 
 		if err != nil {
