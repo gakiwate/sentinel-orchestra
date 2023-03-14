@@ -12,3 +12,6 @@ zgrab:
   topics:
     - "zgrab_4hr"
     - "zgrab_24hr"
+monitor:
+  storage: "/mnt/projects/zdns/sentinel"
+  name: "sentinel-stats"
