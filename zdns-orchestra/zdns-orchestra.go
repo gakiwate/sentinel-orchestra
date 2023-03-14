@@ -9,11 +9,13 @@ import (
 	"syscall"
 	"time"
 
+	mon "github.com/gakiwate/sentinel-orchestra/sentinel-monitor"
 	"github.com/nsqio/go-nsq"
 	log "github.com/sirupsen/logrus"
 )
 
 type SentinelZDNSOrchestrator struct {
+	monitor          *mon.SentinelMonitor
 	nsqHost          string
 	ipv4		 bool
 	ipv6		 bool
@@ -39,9 +41,11 @@ type ZDNSResultData struct {
 type ZDNSResult struct {
 	Data     ZDNSResultData `json:"data"`
 	MetaData ZDNSMetadata   `json:"metadata"`
+	Status   string         `json:"status"`
 }
 
 type SentinelOrchestratorConfig struct {
+	monitor          *mon.SentinelMonitor
 	nsqHost          string
 	ipv4		 bool
 	ipv6		 bool
@@ -51,8 +55,9 @@ type SentinelOrchestratorConfig struct {
 	zdnsDelay        int64
 }
 
-func NewSentinelZDNS4hrDelayOrchestrator(nsqHost string, ipv4 bool, ipv6 bool) *SentinelZDNSOrchestrator {
+func NewSentinelZDNS4hrDelayOrchestrator(monitor *mon.SentinelMonitor, nsqHost string, ipv4 bool, ipv6 bool) *SentinelZDNSOrchestrator {
 	cfg4hr := &SentinelOrchestratorConfig{
+		monitor:          monitor,
 		nsqHost:          nsqHost,
 		ipv4:		  ipv4,
 		ipv6:		  ipv6,
@@ -64,8 +69,9 @@ func NewSentinelZDNS4hrDelayOrchestrator(nsqHost string, ipv4 bool, ipv6 bool) *
 	return NewSentinelZDNSOrchestrator(*cfg4hr)
 }
 
-func NewSentinelZDNS24hrDelayOrchestrator(nsqHost string, ipv4 bool, ipv6 bool) *SentinelZDNSOrchestrator {
+func NewSentinelZDNS24hrDelayOrchestrator(monitor *mon.SentinelMonitor, nsqHost string, ipv4 bool, ipv6 bool) *SentinelZDNSOrchestrator {
 	cfg24hr := &SentinelOrchestratorConfig{
+		monitor:          monitor,
 		nsqHost:          nsqHost,
 		ipv4: 		  ipv4,
 		ipv6:		  ipv6,
@@ -160,6 +166,10 @@ func (szo *SentinelZDNSOrchestrator) FeedBroker() error {
 		if err != nil {
 			log.Error(err)
 			return err
+		}
+		szo.monitor.Stats.Incr("stats.zdns.result_cnt")
+		if Result.Status != "NOERROR" {
+			szo.monitor.Stats.Incr("stats.zdns.error_cnt")
 		}
 		err = szo.feedZDNSDelayed(Result.MetaData, Result.Data.Name)
 		if err != nil {
