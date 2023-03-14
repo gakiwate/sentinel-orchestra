@@ -17,7 +17,7 @@ type CounterValueMerger struct {
 func (c *CounterValueMerger) MergeNewer(value []byte) error {
 	val, err := strconv.Atoi(string(value))
 	if err != nil {
-		log.Error("merge newer:", err)
+		log.Error("merge newer:", err, "; value:", val)
 	}
 	c.Count += val
 	return nil
@@ -27,7 +27,7 @@ func (c *CounterValueMerger) MergeNewer(value []byte) error {
 func (c *CounterValueMerger) MergeOlder(value []byte) error {
 	val, err := strconv.Atoi(string(value))
 	if err != nil {
-		log.Error("merge older:", err)
+		log.Error("merge older:", err, "; value:", val)
 	}
 	c.Count += val
 	return nil
