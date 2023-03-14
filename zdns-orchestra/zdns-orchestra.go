@@ -15,6 +15,7 @@ import (
 
 type SentinelZDNSOrchestrator struct {
 	nsqHost          string
+	ipv4		 bool
 	ipv6		 bool
 	consumer         nsq.Consumer
 	producer         nsq.Producer
@@ -42,6 +43,7 @@ type ZDNSResult struct {
 
 type SentinelOrchestratorConfig struct {
 	nsqHost          string
+	ipv4		 bool
 	ipv6		 bool
 	nsqInTopic       string
 	nsqZDNSOutTopic  string
@@ -49,9 +51,10 @@ type SentinelOrchestratorConfig struct {
 	zdnsDelay        int64
 }
 
-func NewSentinelZDNS4hrDelayOrchestrator(nsqHost string, ipv6 bool) *SentinelZDNSOrchestrator {
+func NewSentinelZDNS4hrDelayOrchestrator(nsqHost string, ipv4 bool, ipv6 bool) *SentinelZDNSOrchestrator {
 	cfg4hr := &SentinelOrchestratorConfig{
 		nsqHost:          nsqHost,
+		ipv4:		  ipv4,
 		ipv6:		  ipv6,
 		nsqInTopic:       "zdns_results",
 		nsqZDNSOutTopic:  "zdns_4hr",
@@ -61,9 +64,10 @@ func NewSentinelZDNS4hrDelayOrchestrator(nsqHost string, ipv6 bool) *SentinelZDN
 	return NewSentinelZDNSOrchestrator(*cfg4hr)
 }
 
-func NewSentinelZDNS24hrDelayOrchestrator(nsqHost string, ipv6 bool) *SentinelZDNSOrchestrator {
+func NewSentinelZDNS24hrDelayOrchestrator(nsqHost string, ipv4 bool, ipv6 bool) *SentinelZDNSOrchestrator {
 	cfg24hr := &SentinelOrchestratorConfig{
 		nsqHost:          nsqHost,
+		ipv4: 		  ipv4,
 		ipv6:		  ipv6,
 		nsqInTopic:       "zdns_4hr_results",
 		nsqZDNSOutTopic:  "zdns_24hr",
@@ -75,6 +79,7 @@ func NewSentinelZDNS24hrDelayOrchestrator(nsqHost string, ipv6 bool) *SentinelZD
 
 func NewSentinelZDNSOrchestrator(cfg SentinelOrchestratorConfig) *SentinelZDNSOrchestrator {
 	nsqHost := cfg.nsqHost
+	ipv4 := cfg.ipv4
 	ipv6 := cfg.ipv6
 	// Instantiate a consumer that will subscribe to the provided channel.
 	consumer, err := nsq.NewConsumer(cfg.nsqInTopic, "orchestrator", nsq.NewConfig())
@@ -93,6 +98,7 @@ func NewSentinelZDNSOrchestrator(cfg SentinelOrchestratorConfig) *SentinelZDNSOr
 
 	return &SentinelZDNSOrchestrator{
 		nsqHost:          nsqHost,
+		ipv4: 		  ipv4,
 		ipv6:		  ipv6,
 		consumer:         *consumer,
 		producer:         *producer,
@@ -119,14 +125,15 @@ func (szo *SentinelZDNSOrchestrator) feedZDNSDelayed(metadata ZDNSMetadata, name
 }
 
 func (szo *SentinelZDNSOrchestrator) feedZGrab(IPv4Addresses []string, IPv6Addresses []string, name string) error {
-
-	for _, ipv4 := range IPv4Addresses {
-		tnow := time.Now().Unix()
-		zgrabInput := fmt.Sprintf("{\"sni\": \"%s\", \"ip\": \"%s\",  \"scan_after\": \"%d\"}", name, ipv4, tnow)
-		log.Info(fmt.Sprintf("ZDNS to Zgrab IPV4: Publishing %s to channel %s", zgrabInput, szo.nsqZDNSOutTopic))
-		err := szo.producer.Publish(szo.nsqZGrabOutTopic, []byte(zgrabInput))
-		if err != nil {
-			log.Error(err)
+	if (szo.ipv4) {
+		for _, ipv4 := range IPv4Addresses {
+			tnow := time.Now().Unix()
+			zgrabInput := fmt.Sprintf("{\"sni\": \"%s\", \"ip\": \"%s\",  \"scan_after\": \"%d\"}", name, ipv4, tnow)
+			log.Info(fmt.Sprintf("ZDNS to Zgrab IPV4: Publishing %s to channel %s", zgrabInput, szo.nsqZDNSOutTopic))
+			err := szo.producer.Publish(szo.nsqZGrabOutTopic, []byte(zgrabInput))
+			if err != nil {
+				log.Error(err)
+			}
 		}
 	}
 	if (szo.ipv6) {
