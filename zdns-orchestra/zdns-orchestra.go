@@ -112,11 +112,11 @@ func (szo *SentinelZDNSOrchestrator) feedZDNSDelayed(metadata ZDNSMetadata, name
 	return nil
 }
 
-func (szo *SentinelZDNSOrchestrator) feedZGrab(IPv4Addresses []string, IPv6Addresses []string, name string) error {
+func (szo *SentinelZDNSOrchestrator) feedZGrab(IPv4Addresses []string, IPv6Addresses []string, name string, certSHA1 string) error {
 
 	for _, ipv4 := range IPv4Addresses {
 		tnow := time.Now().Unix()
-		zgrabInput := fmt.Sprintf("{\"sni\": \"%s\", \"ip\": \"%s\",  \"scan_after\": \"%d\"}", name, ipv4, tnow)
+		zgrabInput := fmt.Sprintf("{\"sni\": \"%s\", \"ip\": \"%s\", \"scan_after\": \"%d\", \"cert_sha1\": \"%s\"}", name, ipv4, tnow, certSHA1)
 		log.Info(fmt.Sprintf("ZDNS to Zgrab IPV4: Publishing %s to channel %s", zgrabInput, szo.nsqZDNSOutTopic))
 		err := szo.producer.Publish(szo.nsqZGrabOutTopic, []byte(zgrabInput))
 		if err != nil {
@@ -125,7 +125,7 @@ func (szo *SentinelZDNSOrchestrator) feedZGrab(IPv4Addresses []string, IPv6Addre
 	}
 	for _, ipv6 := range IPv6Addresses {
 		tnow := time.Now().Unix()
-		zgrabInput := fmt.Sprintf("{\"sni\": \"%s\", \"ip\": \"%s\",  \"scan_after\": \"%d\"}", name, ipv6, tnow)
+		zgrabInput := fmt.Sprintf("{\"sni\": \"%s\", \"ip\": \"%s\", \"scan_after\": \"%d\", \"cert_sha1\": \"%s\"}", name, ipv6, tnow, certSHA1)
 		log.Info(fmt.Sprintf("ZDNS to Zgrab IPV6: Publishing %s to channel %s", zgrabInput, szo.nsqZDNSOutTopic))
 		err := szo.producer.Publish(szo.nsqZGrabOutTopic, []byte(zgrabInput))
 		if err != nil {
@@ -151,7 +151,7 @@ func (szo *SentinelZDNSOrchestrator) FeedBroker() error {
 			log.Error(err)
 			return err
 		}
-		err = szo.feedZGrab(Result.Data.IPv4Addresses, Result.Data.IPv6Addresses, Result.Data.Name)
+		err = szo.feedZGrab(Result.Data.IPv4Addresses, Result.Data.IPv6Addresses, Result.Data.Name, Result.MetaData.CertSHA1)
 		if err != nil {
 			log.Error(err)
 			return err

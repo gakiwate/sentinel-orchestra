@@ -24,6 +24,7 @@ type ZGrabResult struct {
 	IP        string `json:"ip"`
 	Domain    string `json:"domain"`
 	ScanAfter string `json:"scan_after"`
+	CertSHA1  string `json:"cert_sha1"`
 }
 
 type SentinelOrchestratorConfig struct {
@@ -79,11 +80,11 @@ func NewSentinelZGrabOrchestrator(cfg SentinelOrchestratorConfig) *SentinelZGrab
 	}
 }
 
-func (szo *SentinelZGrabOrchestrator) feedZGrabDelayed(IP string, Domain string, ScanAfter string) error {
+func (szo *SentinelZGrabOrchestrator) feedZGrabDelayed(IP string, Domain string, ScanAfter string, CertSHA1 string) error {
 	newScanAfter, _ := strconv.ParseInt(ScanAfter, 0, 64)
 	newScanAfter = newScanAfter + szo.zgrabDelay
 
-	zgrabInput := fmt.Sprintf("{\"sni\": \"%s\", \"ip\": \"%s\", \"scan_after\": \"%d\"}", Domain, IP, newScanAfter)
+	zgrabInput := fmt.Sprintf("{\"sni\": \"%s\", \"ip\": \"%s\", \"scan_after\": \"%d\", \"cert_sha1\": \"%s\"}", Domain, IP, newScanAfter, CertSHA1)
 	err := szo.producer.Publish(szo.nsqZGrabOutTopic, []byte(zgrabInput))
 	log.Info(fmt.Sprintf("Zgrab to 4/24hr: Publishing %s to channel %s", zgrabInput, szo.nsqZGrabOutTopic))
 
@@ -106,7 +107,7 @@ func (szo *SentinelZGrabOrchestrator) FeedBroker() error {
 			return err
 		}
 
-		err = szo.feedZGrabDelayed(Result.IP, Result.Domain, Result.ScanAfter)
+		err = szo.feedZGrabDelayed(Result.IP, Result.Domain, Result.ScanAfter, Result.CertSHA1)
 
 		if err != nil {
 			log.Error(err)
