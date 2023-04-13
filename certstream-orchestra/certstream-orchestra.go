@@ -57,7 +57,7 @@ func (o *SentinelCertstreamOrchestrator) Run() {
 	var nsqOutTopic string = o.nsqOutTopic
 
 	// Set Logger Level
-	log.SetLevel(log.ErrorLevel)
+	// log.SetLevel(log.ErrorLevel)
 
 	// Create a new NSQ producer
 

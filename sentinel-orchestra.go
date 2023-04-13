@@ -47,7 +47,7 @@ func main() {
 	rootCmd.Flags().StringVar(&nsqOutTopic, "nsq-topic", "zdns", "The NSQ topic to publish on")
 
 	// Set Logger Level
-	log.SetLevel(log.ErrorLevel)
+	// log.SetLevel(log.ErrorLevel)
 
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)

@@ -116,7 +116,8 @@ func (szo *SentinelZDNSOrchestrator) feedZGrab(IPv4Addresses []string, IPv6Addre
 
 	for _, ipv4 := range IPv4Addresses {
 		tnow := time.Now().Unix()
-		zgrabInput := fmt.Sprintf("{\"sni\": \"%s\", \"ip\": \"%s\", \"scan_after\": \"%d\", \"cert_sha1\": \"%s\"}", name, ipv4, tnow, certSHA1)
+		// zgrabInput := fmt.Sprintf("{\"domain\": \"%s\",\"metadata\": {\"cert_sha1\": \"%s\", \"scan_after\": \"%d\"}}", name, metadata.CertSHA1, newScanAfter)
+		zgrabInput := fmt.Sprintf("{\"sni\": \"%s\", \"ip\": \"%s\", \"metadata\": {\"scan_after\": \"%d\", \"cert_sha1\": \"%s\"}}", name, ipv4, tnow, certSHA1)
 		log.Info(fmt.Sprintf("ZDNS to Zgrab IPV4: Publishing %s to channel %s", zgrabInput, szo.nsqZDNSOutTopic))
 		err := szo.producer.Publish(szo.nsqZGrabOutTopic, []byte(zgrabInput))
 		if err != nil {

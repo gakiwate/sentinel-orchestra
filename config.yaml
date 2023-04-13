@@ -1,7 +1,7 @@
 certstream:
   enable: true
   topics:
-    - "certstream"
+    - "zdns"
 zdns:
   enable: true
   topics:
