@@ -20,6 +20,8 @@ type Config struct {
 	} `yaml:"certstream"`
 	ZDNS struct {
 		Enable bool     `default:"false" yaml:"enable"`
+		Ipv4 bool	`yaml:"ipv4"`
+		Ipv6 bool	`yaml:"ipv6"`
 		Topics []string `yaml:"topics"`
 	} `yaml:"zdns"`
 	ZGrab struct {
@@ -81,13 +83,15 @@ func main() {
 	}
 
 	if config.ZDNS.Enable {
+		ipv4 := config.ZDNS.Ipv4
+		ipv6 := config.ZDNS.Ipv6
 		for _, topic := range config.ZDNS.Topics {
 			if topic == "zdns_4hr" {
-				zdnsOrchestrator_4hr := zdnsorc.NewSentinelZDNS4hrDelayOrchestrator(monitor, nsqHost)
+				zdnsOrchestrator_4hr := zdnsorc.NewSentinelZDNS4hrDelayOrchestrator(monitor, nsqHost, ipv4, ipv6)
 				go zdnsOrchestrator_4hr.FeedBroker()
 			}
 			if topic == "zdns_24hr" {
-				zdnsOrchestrator_24hr := zdnsorc.NewSentinelZDNS24hrDelayOrchestrator(monitor, nsqHost)
+				zdnsOrchestrator_24hr := zdnsorc.NewSentinelZDNS24hrDelayOrchestrator(monitor, nsqHost, ipv4, ipv6)
 				go zdnsOrchestrator_24hr.FeedBroker()
 			}
 		}
