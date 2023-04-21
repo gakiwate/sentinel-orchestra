@@ -8,11 +8,13 @@ import (
 	"strconv"
 	"syscall"
 
+	mon "github.com/gakiwate/sentinel-orchestra/sentinel-monitor"
 	"github.com/nsqio/go-nsq"
 	log "github.com/sirupsen/logrus"
 )
 
 type SentinelZGrabOrchestrator struct {
+	monitor          *mon.SentinelMonitor
 	nsqHost          string
 	consumer         nsq.Consumer
 	producer         nsq.Producer
@@ -32,14 +34,16 @@ type ZGrabResult struct {
 }
 
 type SentinelOrchestratorConfig struct {
+	monitor          *mon.SentinelMonitor
 	nsqHost          string
 	nsqInTopic       string
 	nsqZGrabOutTopic string
 	zgrabDelay       int64
 }
 
-func NewSentinelZgrab4hrDelayOrchestrator(nsqHost string) *SentinelZGrabOrchestrator {
+func NewSentinelZgrab4hrDelayOrchestrator(monitor *mon.SentinelMonitor, nsqHost string) *SentinelZGrabOrchestrator {
 	cfg4hr := &SentinelOrchestratorConfig{
+		monitor:          monitor,
 		nsqHost:          nsqHost,
 		nsqInTopic:       "zgrab_results",
 		nsqZGrabOutTopic: "zgrab_4hr",
@@ -48,8 +52,9 @@ func NewSentinelZgrab4hrDelayOrchestrator(nsqHost string) *SentinelZGrabOrchestr
 	return NewSentinelZGrabOrchestrator(*cfg4hr)
 }
 
-func NewSentinelZgrab24hrDelayOrchestrator(nsqHost string) *SentinelZGrabOrchestrator {
+func NewSentinelZgrab24hrDelayOrchestrator(monitor *mon.SentinelMonitor, nsqHost string) *SentinelZGrabOrchestrator {
 	cfg24hr := &SentinelOrchestratorConfig{
+		monitor:          monitor,
 		nsqHost:          nsqHost,
 		nsqInTopic:       "zgrab_4hr_results",
 		nsqZGrabOutTopic: "zgrab_24hr",
@@ -76,6 +81,7 @@ func NewSentinelZGrabOrchestrator(cfg SentinelOrchestratorConfig) *SentinelZGrab
 	}
 
 	return &SentinelZGrabOrchestrator{
+		monitor:          cfg.monitor,
 		nsqHost:          nsqHost,
 		consumer:         *consumer,
 		producer:         *producer,
@@ -113,7 +119,8 @@ func (szo *SentinelZGrabOrchestrator) FeedBroker() error {
 			log.Error(err)
 			return err
 		}
-		err = szo.feedZGrabDelayed(Result.MetaData, Result.IP, Result.Domain)
+		szo.monitor.Stats.Incr("stats.zgrab.result_cnt")
+		err = szo.feedZGrabDelayed(Result.IP, Result.Domain, Result.ScanAfter)
 
 		if err != nil {
 			log.Error(err)
