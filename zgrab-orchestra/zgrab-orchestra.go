@@ -94,8 +94,6 @@ func (szo *SentinelZGrabOrchestrator) feedZGrabDelayed(metadata ZGrabMetadata, I
 	ScanAfter := metadata.ScanAfter
 	newScanAfter, _ := strconv.ParseInt(ScanAfter, 0, 64)
 	newScanAfter = newScanAfter + szo.zgrabDelay
-
-	// zgrabInput := fmt.Sprintf("{\"sni\": \"%s\", \"ip\": \"%s\", \"scan_after\": \"%d\", \"cert_sha1\": \"%s\"}", Domain, IP, newScanAfter, metadata.CertSHA1)
 	zgrabInput := fmt.Sprintf("{\"sni\": \"%s\", \"ip\": \"%s\", \"metadata\": {\"scan_after\": \"%d\", \"cert_sha1\": \"%s\"}}", Domain, IP, newScanAfter, metadata.CertSHA1)
 
 	err := szo.producer.Publish(szo.nsqZGrabOutTopic, []byte(zgrabInput))
@@ -120,7 +118,7 @@ func (szo *SentinelZGrabOrchestrator) FeedBroker() error {
 			return err
 		}
 		szo.monitor.Stats.Incr("stats.zgrab.result_cnt")
-		err = szo.feedZGrabDelayed(Result.IP, Result.Domain, Result.ScanAfter)
+		err = szo.feedZGrabDelayed(Result.MetaData, Result.IP, Result.Domain)
 
 		if err != nil {
 			log.Error(err)
