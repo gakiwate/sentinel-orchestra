@@ -103,6 +103,7 @@ func NewSentinelZDNSOrchestrator(cfg SentinelOrchestratorConfig) *SentinelZDNSOr
 	}
 
 	return &SentinelZDNSOrchestrator{
+		monitor:          cfg.monitor,
 		nsqHost:          nsqHost,
 		ipv4:             ipv4,
 		ipv6:             ipv6,
