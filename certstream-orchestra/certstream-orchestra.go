@@ -1,6 +1,7 @@
 package certstreamorc
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -105,6 +106,19 @@ func (o *SentinelCertstreamOrchestrator) Run() {
 				if err != nil {
 					log.Error(err)
 				}
+			}
+
+			data, err := jq.Object("data")
+			if err != nil {
+				log.Error(err)
+			}
+			jsonData, err := json.Marshal(data)
+			if err != nil {
+				log.Error(err)
+			}
+			err = producer.Publish("certstream", jsonData)
+			if err != nil {
+				log.Error(err)
 			}
 
 		case err := <-errStream:
