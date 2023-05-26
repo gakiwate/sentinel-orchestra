@@ -20,8 +20,8 @@ type Config struct {
 	} `yaml:"certstream"`
 	ZDNS struct {
 		Enable bool     `default:"false" yaml:"enable"`
-		Ipv4 bool	`yaml:"ipv4"`
-		Ipv6 bool	`yaml:"ipv6"`
+		Ipv4   bool     `yaml:"ipv4"`
+		Ipv6   bool     `yaml:"ipv6"`
 		Topics []string `yaml:"topics"`
 	} `yaml:"zdns"`
 	ZGrab struct {
@@ -29,8 +29,10 @@ type Config struct {
 		Topics []string `yaml:"topics"`
 	} `yaml:"zgrab"`
 	Monitor struct {
-		Storage string `default:"." yaml:"storage"`
-		Name    string `default:"sentinel-stats" yaml:"name"`
+		Storage    string   `default:"." yaml:"storage"`
+		Name       string   `default:"sentinel-stats" yaml:"name"`
+		IpPrefixes []string `yaml:"ipPrefixes"`
+		Domains    []string `yaml:"domains"`
 	} `yaml:"monitor"`
 }
 
@@ -75,7 +77,7 @@ func main() {
 	}
 
 	monitorName := fmt.Sprintf("%s/%s", config.Monitor.Storage, config.Monitor.Name)
-	monitor := sentinelmon.NewSentinelMonitor(monitorName)
+	monitor := sentinelmon.NewSentinelMonitor(monitorName, config.Monitor.IpPrefixes, config.Monitor.Domains)
 
 	if config.Certstream.Enable {
 		certstreamOrchestrator := certstreamorc.NewSentinelCertstreamOrchestrator(monitor, nsqHost, config.Certstream.Topics[0])

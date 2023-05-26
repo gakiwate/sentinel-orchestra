@@ -5,8 +5,10 @@ go 1.18
 require (
 	github.com/CaliDog/certstream-go v0.0.0-20200713031452-eca7997412f1
 	github.com/cockroachdb/pebble v0.0.0-20230217215838-f01d8eff3f8b
+	github.com/joho/godotenv v1.5.1
 	github.com/nsqio/go-nsq v1.1.0
 	github.com/sirupsen/logrus v1.9.0
+	github.com/slack-go/slack v0.12.2
 	github.com/spf13/cobra v1.6.1
 	gopkg.in/yaml.v2 v2.4.0
 )
