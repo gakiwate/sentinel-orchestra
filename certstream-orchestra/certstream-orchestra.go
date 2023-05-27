@@ -96,10 +96,16 @@ func (o *SentinelCertstreamOrchestrator) Run() {
 			}
 			certSHA1 = formatSHA1(certSHA1)
 
+			// get cert type
+			certType, err := jq.String("data", "update_type")
+			if err != nil {
+				log.Error(err)
+			}
+
 			for _, domain := range domains {
 				o.monitor.Stats.Incr("certstream.domain_cnt")
 				tnow := time.Now().Unix()
-				zdnsFeedInput := fmt.Sprintf("{\"domain\": \"%s\",\"metadata\": {\"cert_sha1\": \"%s\", \"scan_after\": \"%d\"}}", domain, certSHA1, tnow)
+				zdnsFeedInput := fmt.Sprintf("{\"domain\": \"%s\",\"metadata\": {\"cert_sha1\": \"%s\", \"scan_after\": \"%d\", \"cert_type\": \"%s\"}}", domain, certSHA1, tnow, certType)
 				err = producer.Publish(nsqOutTopic, []byte(zdnsFeedInput))
 				log.Info(fmt.Sprintf("Certstream: Publishing %s to channel %s", zdnsFeedInput, nsqOutTopic))
 				if err != nil {
