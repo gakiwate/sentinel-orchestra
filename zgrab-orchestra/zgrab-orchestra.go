@@ -95,7 +95,7 @@ func (szo *SentinelZGrabOrchestrator) feedZGrabDelayed(metadata ZGrabMetadata, I
 	ScanAfter := metadata.ScanAfter
 	newScanAfter, _ := strconv.ParseInt(ScanAfter, 0, 64)
 	newScanAfter = newScanAfter + szo.zgrabDelay
-	zgrabInput := fmt.Sprintf("{\"sni\": \"%s\", \"ip\": \"%s\", \"metadata\": {\"scan_after\": \"%d\", \"cert_sha1\": \"%s\", , \"cert_type\": \"%s\"}}", Domain, IP, newScanAfter, metadata.CertSHA1, metadata.CertType)
+	zgrabInput := fmt.Sprintf("{\"sni\": \"%s\", \"ip\": \"%s\", \"metadata\": {\"scan_after\": \"%d\", \"cert_sha1\": \"%s\", \"cert_type\": \"%s\"}}", Domain, IP, newScanAfter, metadata.CertSHA1, metadata.CertType)
 
 	err := szo.producer.Publish(szo.nsqZGrabOutTopic, []byte(zgrabInput))
 	log.Info(fmt.Sprintf("Zgrab to 4/24hr: Publishing %s to channel %s", zgrabInput, szo.nsqZGrabOutTopic))
