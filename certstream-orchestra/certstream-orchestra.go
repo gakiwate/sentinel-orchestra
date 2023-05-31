@@ -1,6 +1,7 @@
 package certstreamorc
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -78,6 +79,19 @@ func (o *SentinelCertstreamOrchestrator) Run() {
 		o.monitor.Stats.Incr("certstream.cert_cnt")
 		select {
 		case jq := <-stream:
+			data, err := jq.Object("data")
+			if err != nil {
+				log.Error(err)
+			}
+			jsonData, err := json.Marshal(data)
+			if err != nil {
+				log.Error(err)
+			}
+			err = producer.Publish("certstream", jsonData)
+			if err != nil {
+				log.Error(err)
+			}
+
 			domains, err := jq.ArrayOfStrings("data", "leaf_cert", "all_domains")
 			// format all domains to remove wildcard entries and lower case
 			for idx, domain := range domains {
