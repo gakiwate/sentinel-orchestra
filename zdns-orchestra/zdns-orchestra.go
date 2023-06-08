@@ -120,7 +120,6 @@ func (szo *SentinelZDNSOrchestrator) feedZDNSDelayed(metadata ZDNSMetadata, name
 	scanAfter := metadata.ScanAfter
 	newScanAfter, _ := strconv.ParseInt(scanAfter, 0, 64)
 	newScanAfter = newScanAfter + szo.zdnsDelay
-
 	// fmt.Printf("New Scan After: %d; Delay: %d", newScanAfter, szo.zdnsDelay)
 	zdnsFeedInput := fmt.Sprintf("{\"domain\": \"%s\",\"metadata\": {\"cert_sha1\": \"%s\", \"scan_after\": \"%d\", \"cert_type\": \"%s\"}}", name, metadata.CertSHA1, newScanAfter, metadata.CertType)
 	err := szo.producer.Publish(szo.nsqZDNSOutTopic, []byte(zdnsFeedInput))
@@ -135,6 +134,8 @@ func (szo *SentinelZDNSOrchestrator) feedZDNSDelayed(metadata ZDNSMetadata, name
 func (szo *SentinelZDNSOrchestrator) feedZGrab(IPv4Addresses []string, IPv6Addresses []string, name string, certSHA1 string, certType string) error {
 	if szo.ipv4 {
 		for _, ipv4 := range IPv4Addresses {
+			szo.monitor.Matcher.IPMatch(ipv4)
+			szo.monitor.Matcher.DomainMatch(name)
 			tnow := time.Now().Unix()
 			zgrabInput := fmt.Sprintf("{\"sni\": \"%s\", \"ip\": \"%s\", \"metadata\": {\"scan_after\": \"%d\", \"cert_sha1\": \"%s\", \"cert_type\": \"%s\"}}", name, ipv4, tnow, certSHA1, certType)
 			log.Info(fmt.Sprintf("ZDNS to Zgrab IPV4: Publishing %s to channel %s", zgrabInput, szo.nsqZDNSOutTopic))
@@ -146,6 +147,7 @@ func (szo *SentinelZDNSOrchestrator) feedZGrab(IPv4Addresses []string, IPv6Addre
 	}
 	if szo.ipv6 {
 		for _, ipv6 := range IPv6Addresses {
+			szo.monitor.Matcher.IPMatch(ipv6)
 			tnow := time.Now().Unix()
 			zgrabInput := fmt.Sprintf("{\"sni\": \"%s\", \"ip\": \"%s\", \"metadata\": {\"scan_after\": \"%d\", \"cert_sha1\": \"%s\", \"cert_type\": \"%s\"}}", name, ipv6, tnow, certSHA1, certType)
 			log.Info(fmt.Sprintf("ZDNS to Zgrab IPV6: Publishing %s to channel %s", zgrabInput, szo.nsqZDNSOutTopic))

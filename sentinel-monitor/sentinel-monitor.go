@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"net/http"
 
+	matcher "github.com/gakiwate/sentinel-orchestra/sentinel-matcher"
 	utils "github.com/gakiwate/sentinel-orchestra/sentinel-utils"
 )
 
 type SentinelMonitor struct {
-	Stats utils.SentinelCounters
+	Matcher *matcher.Matcher
+	Stats   utils.SentinelCounters
 }
 
 func (mon *SentinelMonitor) Serve() error {
@@ -32,8 +34,9 @@ func (mon *SentinelMonitor) Serve() error {
 	return http.ListenAndServe(":8000", nil)
 }
 
-func NewSentinelMonitor(monitorName string) *SentinelMonitor {
+func NewSentinelMonitor(monitorName string, ipPrefixes []string, domains []string) *SentinelMonitor {
 	return &SentinelMonitor{
-		Stats: *utils.NewSentinelCounter(monitorName, false),
+		Matcher: matcher.NewMatcher(ipPrefixes, domains),
+		Stats:   *utils.NewSentinelCounter(monitorName, false),
 	}
 }

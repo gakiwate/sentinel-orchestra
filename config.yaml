@@ -15,3 +15,5 @@ zgrab:
 monitor:
   storage: "/mnt/projects/zdns/sentinel"
   name: "sentinel-stats"
+  ipPrefixes:
+  domains:
