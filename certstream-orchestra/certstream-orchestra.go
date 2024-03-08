@@ -64,7 +64,7 @@ func (o *SentinelCertstreamOrchestrator) Run() {
 	log.SetLevel(log.ErrorLevel)
 
 	// Create a new NSQ producer
-
+	log.Info("Creating new NSQ producer")
 	nsqUrl := fmt.Sprintf("%s:4150", nsqHost)
 	producer, err := nsq.NewProducer(nsqUrl, nsq.NewConfig())
 	producer.SetLoggerLevel(nsq.LogLevelError)
@@ -75,6 +75,7 @@ func (o *SentinelCertstreamOrchestrator) Run() {
 	log.Info(fmt.Sprintf("Connecting to NSQ at %s", nsqUrl))
 
 	stream, errStream := certstream.CertStreamEventStream(false)
+
 	for {
 		o.monitor.Stats.Incr("certstream.cert_cnt")
 		select {
@@ -116,14 +117,16 @@ func (o *SentinelCertstreamOrchestrator) Run() {
 				log.Error(err)
 			}
 
-			for _, domain := range domains {
-				o.monitor.Stats.Incr("certstream.domain_cnt")
-				tnow := time.Now().Unix()
-				zdnsFeedInput := fmt.Sprintf("{\"domain\": \"%s\",\"metadata\": {\"cert_sha1\": \"%s\", \"scan_after\": \"%d\", \"cert_type\": \"%s\"}}", domain, certSHA1, tnow, certType)
-				err = producer.Publish(nsqOutTopic, []byte(zdnsFeedInput))
-				log.Info(fmt.Sprintf("Certstream: Publishing %s to channel %s", zdnsFeedInput, nsqOutTopic))
-				if err != nil {
-					log.Error(err)
+			if certType == "PrecertLogEntry" {
+				for _, domain := range domains {
+					o.monitor.Stats.Incr("certstream.domain_cnt")
+					tnow := time.Now().Unix()
+					zdnsFeedInput := fmt.Sprintf("{\"domain\": \"%s\",\"metadata\": {\"cert_sha1\": \"%s\", \"scan_after\": \"%d\", \"cert_type\": \"%s\"}}", domain, certSHA1, tnow, certType)
+					err = producer.Publish(nsqOutTopic, []byte(zdnsFeedInput))
+					log.Info(fmt.Sprintf("Certstream: Publishing %s to channel %s", zdnsFeedInput, nsqOutTopic))
+					if err != nil {
+						log.Error(err)
+					}
 				}
 			}
 
