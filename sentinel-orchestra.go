@@ -20,8 +20,8 @@ type Config struct {
 	} `yaml:"certstream"`
 	ZDNS struct {
 		Enable bool     `default:"false" yaml:"enable"`
-		Ipv4 bool	`yaml:"ipv4"`
-		Ipv6 bool	`yaml:"ipv6"`
+		Ipv4   bool     `yaml:"ipv4"`
+		Ipv6   bool     `yaml:"ipv6"`
 		Topics []string `yaml:"topics"`
 	} `yaml:"zdns"`
 	ZGrab struct {
@@ -35,6 +35,7 @@ type Config struct {
 }
 
 func main() {
+
 	var nsqHost string
 	var nsqOutTopic string
 
@@ -77,10 +78,13 @@ func main() {
 	monitorName := fmt.Sprintf("%s/%s", config.Monitor.Storage, config.Monitor.Name)
 	monitor := sentinelmon.NewSentinelMonitor(monitorName)
 
+	log.Info("Created the monitor")
+
 	if config.Certstream.Enable {
 		certstreamOrchestrator := certstreamorc.NewSentinelCertstreamOrchestrator(monitor, nsqHost, config.Certstream.Topics[0])
 		go certstreamOrchestrator.Run()
 	}
+	log.Info("Launched certstream orchestrator")
 
 	if config.ZDNS.Enable {
 		ipv4 := config.ZDNS.Ipv4
@@ -90,9 +94,9 @@ func main() {
 				zdnsOrchestrator_4hr := zdnsorc.NewSentinelZDNS4hrDelayOrchestrator(monitor, nsqHost, ipv4, ipv6)
 				go zdnsOrchestrator_4hr.FeedBroker()
 			}
-			if topic == "zdns_24hr" {
-				zdnsOrchestrator_24hr := zdnsorc.NewSentinelZDNS24hrDelayOrchestrator(monitor, nsqHost, ipv4, ipv6)
-				go zdnsOrchestrator_24hr.FeedBroker()
+			if topic == "zdns_8hr" {
+				zdnsOrchestrator_8hr := zdnsorc.NewSentinelZDNS8hrDelayOrchestrator(monitor, nsqHost, ipv4, ipv6)
+				go zdnsOrchestrator_8hr.FeedBroker()
 			}
 		}
 	}
@@ -103,9 +107,9 @@ func main() {
 				zgrabOrchestrator_4hr := zgraborc.NewSentinelZgrab4hrDelayOrchestrator(monitor, nsqHost)
 				go zgrabOrchestrator_4hr.FeedBroker()
 			}
-			if topic == "zgrab_24hr" {
-				zgrabOrchestrator_24hr := zgraborc.NewSentinelZgrab24hrDelayOrchestrator(monitor, nsqHost)
-				go zgrabOrchestrator_24hr.FeedBroker()
+			if topic == "zgrab_8hr" {
+				zgrabOrchestrator_8hr := zgraborc.NewSentinelZgrab8hrDelayOrchestrator(monitor, nsqHost)
+				go zgrabOrchestrator_8hr.FeedBroker()
 			}
 		}
 	}

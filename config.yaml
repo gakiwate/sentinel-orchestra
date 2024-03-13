@@ -8,10 +8,12 @@ zdns:
   ipv6: false
   topics:
     - "zdns_4hr"
+    - "zdns_8hr"
 zgrab:
   enable: true
   topics:
     - "zgrab_4hr"
+    - "zgrab_8hr"
 monitor:
   storage: "/mnt/projects/zdns/sentinel"
   name: "sentinel-stats"

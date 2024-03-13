@@ -53,15 +53,15 @@ func NewSentinelZgrab4hrDelayOrchestrator(monitor *mon.SentinelMonitor, nsqHost 
 	return NewSentinelZGrabOrchestrator(*cfg4hr)
 }
 
-func NewSentinelZgrab24hrDelayOrchestrator(monitor *mon.SentinelMonitor, nsqHost string) *SentinelZGrabOrchestrator {
-	cfg24hr := &SentinelOrchestratorConfig{
+func NewSentinelZgrab8hrDelayOrchestrator(monitor *mon.SentinelMonitor, nsqHost string) *SentinelZGrabOrchestrator {
+	cfg8hr := &SentinelOrchestratorConfig{
 		monitor:          monitor,
 		nsqHost:          nsqHost,
 		nsqInTopic:       "zgrab_4hr_results",
-		nsqZGrabOutTopic: "zgrab_24hr",
-		zgrabDelay:       86400, // 24hours -- 3600 sec * 24
+		nsqZGrabOutTopic: "zgrab_8hr",
+		zgrabDelay:       28800, // 8hours -- 3600 sec * 8
 	}
-	return NewSentinelZGrabOrchestrator(*cfg24hr)
+	return NewSentinelZGrabOrchestrator(*cfg8hr)
 }
 
 func NewSentinelZGrabOrchestrator(cfg SentinelOrchestratorConfig) *SentinelZGrabOrchestrator {
@@ -98,7 +98,7 @@ func (szo *SentinelZGrabOrchestrator) feedZGrabDelayed(metadata ZGrabMetadata, I
 	zgrabInput := fmt.Sprintf("{\"sni\": \"%s\", \"ip\": \"%s\", \"metadata\": {\"scan_after\": \"%d\", \"cert_sha1\": \"%s\", \"cert_type\": \"%s\"}}", Domain, IP, newScanAfter, metadata.CertSHA1, metadata.CertType)
 
 	err := szo.producer.Publish(szo.nsqZGrabOutTopic, []byte(zgrabInput))
-	log.Info(fmt.Sprintf("Zgrab to 4/24hr: Publishing %s to channel %s", zgrabInput, szo.nsqZGrabOutTopic))
+	log.Info(fmt.Sprintf("Zgrab to 4/8hr: Publishing %s to channel %s", zgrabInput, szo.nsqZGrabOutTopic))
 
 	if err != nil {
 		log.Error(err)

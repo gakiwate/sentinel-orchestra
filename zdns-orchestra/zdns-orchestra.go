@@ -70,18 +70,18 @@ func NewSentinelZDNS4hrDelayOrchestrator(monitor *mon.SentinelMonitor, nsqHost s
 	return NewSentinelZDNSOrchestrator(*cfg4hr)
 }
 
-func NewSentinelZDNS24hrDelayOrchestrator(monitor *mon.SentinelMonitor, nsqHost string, ipv4 bool, ipv6 bool) *SentinelZDNSOrchestrator {
-	cfg24hr := &SentinelOrchestratorConfig{
+func NewSentinelZDNS8hrDelayOrchestrator(monitor *mon.SentinelMonitor, nsqHost string, ipv4 bool, ipv6 bool) *SentinelZDNSOrchestrator {
+	cfg8hr := &SentinelOrchestratorConfig{
 		monitor:          monitor,
 		nsqHost:          nsqHost,
 		ipv4:             ipv4,
 		ipv6:             ipv6,
 		nsqInTopic:       "zdns_4hr_results",
-		nsqZDNSOutTopic:  "zdns_24hr",
+		nsqZDNSOutTopic:  "zdns_8hr",
 		nsqZGrabOutTopic: "zgrab",
-		zdnsDelay:        86400, // 24hours -- 3600 sec * 24
+		zdnsDelay:        28800, // 8hours -- 3600 sec * 8
 	}
-	return NewSentinelZDNSOrchestrator(*cfg24hr)
+	return NewSentinelZDNSOrchestrator(*cfg8hr)
 }
 
 func NewSentinelZDNSOrchestrator(cfg SentinelOrchestratorConfig) *SentinelZDNSOrchestrator {
@@ -124,7 +124,7 @@ func (szo *SentinelZDNSOrchestrator) feedZDNSDelayed(metadata ZDNSMetadata, name
 	// fmt.Printf("New Scan After: %d; Delay: %d", newScanAfter, szo.zdnsDelay)
 	zdnsFeedInput := fmt.Sprintf("{\"domain\": \"%s\",\"metadata\": {\"cert_sha1\": \"%s\", \"scan_after\": \"%d\", \"cert_type\": \"%s\"}}", name, metadata.CertSHA1, newScanAfter, metadata.CertType)
 	err := szo.producer.Publish(szo.nsqZDNSOutTopic, []byte(zdnsFeedInput))
-	log.Info(fmt.Sprintf("ZDNS to 4/24hr: Publishing %s to channel %s", zdnsFeedInput, szo.nsqZDNSOutTopic))
+	log.Info(fmt.Sprintf("ZDNS to 4/8hr: Publishing %s to channel %s", zdnsFeedInput, szo.nsqZDNSOutTopic))
 	if err != nil {
 		log.Error(err)
 		return err
