@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	certstreamorc "github.com/gakiwate/sentinel-orchestra/certstream-orchestra"
 	sentinelmon "github.com/gakiwate/sentinel-orchestra/sentinel-monitor"
@@ -64,7 +64,7 @@ func main() {
 	}
 
 	// Use configuration file to determine which programs to run
-	configData, err := ioutil.ReadFile("config.yaml")
+	configData, err := os.ReadFile("config.yaml")
 	if err != nil {
 		log.Fatalf("Failed to read config file: %v", err)
 	}
