@@ -62,7 +62,7 @@ func (ctrdb *SentinelCounters) FetchAllKeysIterator(keyPrefix []byte) *pebble.It
 		return nil // no upper-bound
 	}
 
-	prefixIterOptions := func(prefix []byte) *pebble.IterOptions {
+	prefixIterOptions := func(keyPrefix []byte) *pebble.IterOptions {
 		return &pebble.IterOptions{
 			LowerBound: keyPrefix,
 			UpperBound: keyUpperBound(keyPrefix),
