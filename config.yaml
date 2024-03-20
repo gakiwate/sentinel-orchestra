@@ -3,7 +3,7 @@ certstream:
   topics:
     - "zdns"
 zdns:
-  enable: false
+  enable: true
   ipv4: true
   ipv6: false
   topics:
@@ -15,7 +15,7 @@ zgrab:
     - "zgrab_4hr"
     - "zgrab_8hr"
 monitor:
-  storage: "."
+  storage: "/mnt/projects/zdns/sentinel"
   name: "sentinel-stats"
 datastore:
-  storage: "."
+  storage: "/mnt/projects/zdns/sentinel"
