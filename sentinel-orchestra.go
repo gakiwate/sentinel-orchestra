@@ -5,6 +5,7 @@ import (
 	"os"
 
 	certstreamorc "github.com/gakiwate/sentinel-orchestra/certstream-orchestra"
+	sentineldb "github.com/gakiwate/sentinel-orchestra/sentinel-db"
 	sentinelmon "github.com/gakiwate/sentinel-orchestra/sentinel-monitor"
 	zdnsorc "github.com/gakiwate/sentinel-orchestra/zdns-orchestra"
 	zgraborc "github.com/gakiwate/sentinel-orchestra/zgrab-orchestra"
@@ -29,9 +30,12 @@ type Config struct {
 		Topics []string `yaml:"topics"`
 	} `yaml:"zgrab"`
 	Monitor struct {
-		Storage string `default:"." yaml:"storage"`
-		Name    string `default:"sentinel-stats" yaml:"name"`
+		StoragePath string `default:"." yaml:"storage"`
+		Name        string `default:"sentinel-stats" yaml:"name"`
 	} `yaml:"monitor"`
+	DataStore struct {
+		StoragePath string `default:"." yaml:"storage"`
+	}
 }
 
 func main() {
@@ -75,13 +79,16 @@ func main() {
 		log.Fatalf("Failed to parse config file: %v", err)
 	}
 
-	monitorName := fmt.Sprintf("%s/%s", config.Monitor.Storage, config.Monitor.Name)
+	monitorName := fmt.Sprintf("%s/%s", config.Monitor.StoragePath, config.Monitor.Name)
 	monitor := sentinelmon.NewSentinelMonitor(monitorName)
-
 	log.Info("Created the monitor")
 
+	dbName := fmt.Sprintf("%s/%s", config.DataStore.StoragePath, "sentinel-data")
+	db := sentineldb.NewSentinelDB(dbName, false)
+	log.Info("Created Data Store")
+
 	if config.Certstream.Enable {
-		certstreamOrchestrator := certstreamorc.NewSentinelCertstreamOrchestrator(monitor, nsqHost, config.Certstream.Topics[0])
+		certstreamOrchestrator := certstreamorc.NewSentinelCertstreamOrchestrator(db, monitor, nsqHost, config.Certstream.Topics[0])
 		go certstreamOrchestrator.Run()
 	}
 	log.Info("Launched certstream orchestrator")

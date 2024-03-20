@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/CaliDog/certstream-go"
+	db "github.com/gakiwate/sentinel-orchestra/sentinel-db"
 	mon "github.com/gakiwate/sentinel-orchestra/sentinel-monitor"
 	"github.com/nsqio/go-nsq"
 
@@ -15,14 +16,16 @@ import (
 
 // SentinelCertstreamOrchestrator is the orchestrator for the certstream program
 type SentinelCertstreamOrchestrator struct {
+	db          *db.SentinelDB
 	monitor     *mon.SentinelMonitor
 	nsqHost     string
 	nsqOutTopic string
 }
 
 // NewSentinelCertstreamOrchestrator creates a new SentinelCertstreamOrchestrator
-func NewSentinelCertstreamOrchestrator(monitor *mon.SentinelMonitor, nsqHost string, nsqOutTopic string) *SentinelCertstreamOrchestrator {
+func NewSentinelCertstreamOrchestrator(db *db.SentinelDB, monitor *mon.SentinelMonitor, nsqHost string, nsqOutTopic string) *SentinelCertstreamOrchestrator {
 	return &SentinelCertstreamOrchestrator{
+		db:          db,
 		monitor:     monitor,
 		nsqHost:     nsqHost,
 		nsqOutTopic: nsqOutTopic,
@@ -77,7 +80,7 @@ func (o *SentinelCertstreamOrchestrator) Run() {
 	stream, errStream := certstream.CertStreamEventStream(false)
 
 	for {
-		o.monitor.Stats.Incr("certstream.cert_cnt")
+		o.monitor.Stats.Incr("monitor|certstream|cert_cnt")
 		select {
 		case jq := <-stream:
 			data, err := jq.Object("data")
@@ -119,8 +122,11 @@ func (o *SentinelCertstreamOrchestrator) Run() {
 
 			if certType == "PrecertLogEntry" {
 				for _, domain := range domains {
-					o.monitor.Stats.Incr("certstream.domain_cnt")
+					o.monitor.Stats.Incr("monitor|certstream|domain_cnt")
 					tnow := time.Now().Unix()
+					dbkey := fmt.Sprintf("certstream|sha1|%s", domain)
+					dbvalue := fmt.Sprintf("{\"cert_sha1\": %s}", certSHA1)
+					o.db.AddResult(dbkey, []byte(dbvalue))
 					zdnsFeedInput := fmt.Sprintf("{\"domain\": \"%s\",\"metadata\": {\"cert_sha1\": \"%s\", \"scan_after\": \"%d\", \"cert_type\": \"%s\"}}", domain, certSHA1, tnow, certType)
 					err = producer.Publish(nsqOutTopic, []byte(zdnsFeedInput))
 					log.Info(fmt.Sprintf("Certstream: Publishing %s to channel %s", zdnsFeedInput, nsqOutTopic))

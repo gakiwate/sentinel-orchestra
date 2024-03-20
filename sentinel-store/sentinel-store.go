@@ -13,6 +13,26 @@ type SentinelStore struct {
 	DB *pebble.DB
 }
 
+func (store *SentinelStore) Close() error {
+	return store.DB.Close()
+}
+
+func NewSentinelDB(name string, tmpDB bool) *SentinelStore {
+	var opts pebble.Options
+
+	if tmpDB {
+		opts.FS = vfs.NewMem()
+	}
+
+	db, err := pebble.Open(fmt.Sprintf("%s.db", name), &opts)
+	if err != nil {
+		log.Fatal("error opening database:", err)
+	}
+	return &SentinelStore{
+		DB: db,
+	}
+}
+
 func NewSentinelCounterStore(storeName string, tmpDB bool) *SentinelStore {
 	var opts pebble.Options
 	opts.Merger = &pebble.Merger{
@@ -38,8 +58,4 @@ func NewSentinelCounterStore(storeName string, tmpDB bool) *SentinelStore {
 	return &SentinelStore{
 		DB: db,
 	}
-}
-
-func (store *SentinelStore) Close() {
-	store.DB.Close()
 }
