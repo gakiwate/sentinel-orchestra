@@ -137,7 +137,7 @@ func (o *SentinelCertstreamOrchestrator) Run() {
 			}
 
 		case err := <-errStream:
-			o.monitor.Stats.Incr("certstream.cert_err_cnt")
+			o.monitor.Stats.Incr("monitor|certstream|cert_err_cnt")
 			log.Error(err)
 		}
 	}

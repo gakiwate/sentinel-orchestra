@@ -9,12 +9,14 @@ import (
 	"syscall"
 	"time"
 
+	sentineldb "github.com/gakiwate/sentinel-orchestra/sentinel-db"
 	mon "github.com/gakiwate/sentinel-orchestra/sentinel-monitor"
 	"github.com/nsqio/go-nsq"
 	log "github.com/sirupsen/logrus"
 )
 
 type SentinelZDNSOrchestrator struct {
+	db               *sentineldb.SentinelDB
 	monitor          *mon.SentinelMonitor
 	nsqHost          string
 	ipv4             bool
@@ -46,6 +48,7 @@ type ZDNSResult struct {
 }
 
 type SentinelOrchestratorConfig struct {
+	db               *sentineldb.SentinelDB
 	monitor          *mon.SentinelMonitor
 	nsqHost          string
 	ipv4             bool
@@ -56,8 +59,9 @@ type SentinelOrchestratorConfig struct {
 	zdnsDelay        int64
 }
 
-func NewSentinelZDNS4hrDelayOrchestrator(monitor *mon.SentinelMonitor, nsqHost string, ipv4 bool, ipv6 bool) *SentinelZDNSOrchestrator {
+func NewSentinelZDNS4hrDelayOrchestrator(db *sentineldb.SentinelDB, monitor *mon.SentinelMonitor, nsqHost string, ipv4 bool, ipv6 bool) *SentinelZDNSOrchestrator {
 	cfg4hr := &SentinelOrchestratorConfig{
+		db:               db,
 		monitor:          monitor,
 		nsqHost:          nsqHost,
 		ipv4:             ipv4,
@@ -70,8 +74,9 @@ func NewSentinelZDNS4hrDelayOrchestrator(monitor *mon.SentinelMonitor, nsqHost s
 	return NewSentinelZDNSOrchestrator(*cfg4hr)
 }
 
-func NewSentinelZDNS8hrDelayOrchestrator(monitor *mon.SentinelMonitor, nsqHost string, ipv4 bool, ipv6 bool) *SentinelZDNSOrchestrator {
+func NewSentinelZDNS8hrDelayOrchestrator(db *sentineldb.SentinelDB, monitor *mon.SentinelMonitor, nsqHost string, ipv4 bool, ipv6 bool) *SentinelZDNSOrchestrator {
 	cfg8hr := &SentinelOrchestratorConfig{
+		db:               db,
 		monitor:          monitor,
 		nsqHost:          nsqHost,
 		ipv4:             ipv4,
@@ -104,6 +109,7 @@ func NewSentinelZDNSOrchestrator(cfg SentinelOrchestratorConfig) *SentinelZDNSOr
 	}
 
 	return &SentinelZDNSOrchestrator{
+		db:               cfg.db,
 		monitor:          cfg.monitor,
 		nsqHost:          nsqHost,
 		ipv4:             ipv4,
@@ -169,9 +175,9 @@ func (szo *SentinelZDNSOrchestrator) FeedBroker() error {
 			log.Error(err)
 			return err
 		}
-		szo.monitor.Stats.Incr("stats.zdns.result_cnt")
+		szo.monitor.Stats.Incr("monitor|zdns|result_cnt")
 		if Result.Status != "NOERROR" {
-			szo.monitor.Stats.Incr("stats.zdns.error_cnt")
+			szo.monitor.Stats.Incr("monitor|zdns|error_cnt")
 		}
 		err = szo.feedZDNSDelayed(Result.MetaData, Result.Data.Name)
 		if err != nil {
@@ -183,6 +189,16 @@ func (szo *SentinelZDNSOrchestrator) FeedBroker() error {
 			log.Error(err)
 			return err
 		}
+
+		// Add IPv4
+		key := fmt.Sprintf("zdns|ipv4|%s", Result.Data.Name)
+		value4 := fmt.Sprintf("%v", Result.Data.IPv4Addresses)
+		szo.db.AddResult(key, []byte(value4))
+
+		// Add IPv6
+		key = fmt.Sprintf("zdns|ipv6|%s", Result.Data.Name)
+		value6 := fmt.Sprintf("%v", Result.Data.IPv6Addresses)
+		szo.db.AddResult(key, []byte(value6))
 
 		return nil
 	}))

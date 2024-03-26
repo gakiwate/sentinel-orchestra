@@ -10,7 +10,9 @@
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+sentinel-orchestra
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
-sentinel-orchestra
+sentinel-stats.db/
+sentinel-data.db/

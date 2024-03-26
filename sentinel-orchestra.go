@@ -98,11 +98,11 @@ func main() {
 		ipv6 := config.ZDNS.Ipv6
 		for _, topic := range config.ZDNS.Topics {
 			if topic == "zdns_4hr" {
-				zdnsOrchestrator_4hr := zdnsorc.NewSentinelZDNS4hrDelayOrchestrator(monitor, nsqHost, ipv4, ipv6)
+				zdnsOrchestrator_4hr := zdnsorc.NewSentinelZDNS4hrDelayOrchestrator(db, monitor, nsqHost, ipv4, ipv6)
 				go zdnsOrchestrator_4hr.FeedBroker()
 			}
 			if topic == "zdns_8hr" {
-				zdnsOrchestrator_8hr := zdnsorc.NewSentinelZDNS8hrDelayOrchestrator(monitor, nsqHost, ipv4, ipv6)
+				zdnsOrchestrator_8hr := zdnsorc.NewSentinelZDNS8hrDelayOrchestrator(db, monitor, nsqHost, ipv4, ipv6)
 				go zdnsOrchestrator_8hr.FeedBroker()
 			}
 		}
