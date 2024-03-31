@@ -42,9 +42,16 @@ type ZDNSResultData struct {
 }
 
 type ZDNSResult struct {
-	Data     ZDNSResultData `json:"data"`
-	MetaData ZDNSMetadata   `json:"metadata"`
-	Status   string         `json:"status"`
+	Data      ZDNSResultData `json:"data"`
+	MetaData  ZDNSMetadata   `json:"metadata"`
+	Status    string         `json:"status"`
+	Timestamp string         `json:"timestamp"`
+}
+
+type SentinelDBResult struct {
+	IPv4Addresses []string `json:"ipv4"`
+	IPv6Addresses []string `json:"ipv6"`
+	Timestamp     string   `json:"timestamp"`
 }
 
 type SentinelOrchestratorConfig struct {
@@ -190,15 +197,20 @@ func (szo *SentinelZDNSOrchestrator) FeedBroker() error {
 			return err
 		}
 
-		// Add IPv4
-		key := fmt.Sprintf("zdns|ipv4|%s", Result.Data.Name)
-		value4 := fmt.Sprintf("%v", Result.Data.IPv4Addresses)
-		szo.db.AddResult(key, []byte(value4))
+		// Add IPs to Sentinel DB
+		key := fmt.Sprintf("zdns|ips|%s", Result.Data.Name)
+		sentinelResult := SentinelDBResult{
+			Timestamp:     Result.Timestamp,
+			IPv4Addresses: Result.Data.IPv4Addresses,
+			IPv6Addresses: Result.Data.IPv6Addresses,
+		}
 
-		// Add IPv6
-		key = fmt.Sprintf("zdns|ipv6|%s", Result.Data.Name)
-		value6 := fmt.Sprintf("%v", Result.Data.IPv6Addresses)
-		szo.db.AddResult(key, []byte(value6))
+		value, err := json.Marshal(sentinelResult)
+		if err != nil {
+			log.Error(err)
+			return err
+		}
+		szo.db.AddResult(key, value)
 
 		return nil
 	}))
